@@ -1,0 +1,15 @@
+Package: mediateR
+Type: Package
+Title: Direct and Indirect Mediation Effects with Multiple Mediators
+Version: 0.1.0
+Author: James P Long
+Maintainer: <jplong@mdanderson.org>
+Description: Computes direct and indirect effects (mediation analysis) with mutliple potential mediators and various mediator-outcome models (linear, logistics, cox proportional hazards). The mediator structure does not need to be specified and confounders can be included in the model. The package has special functionality for computing mediation effects on the restricted mean scale for the Cox proportional hazards model.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports:
+    glmnet  (>= 2.0-16),
+    Rgraphviz,
+    MASS,
+    survival
