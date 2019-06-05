@@ -54,7 +54,7 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
   x <- cbind(snp,gs,co)
   alpha <- 0.99 ## balance of L1 versus L2 used in glmnet
   if(reg){
-    out <- cv.glmnet(x,y,family=family,alpha=alpha)
+    out <- glmnet::cv.glmnet(x,y,family=family,alpha=alpha)
     if(out$lambda[1]==out$lambda.1se){
       warning("need to choose larger lambdas for computing direct effects")
     }
@@ -62,7 +62,7 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
   } else{
     if(family=="cox"){
       ## fitter warns when wald test statistic not useful, but we don't care
-      out <- coxph(y~x)
+      out <- survival::coxph(y~x)
       temp <- coef(out)
       names(temp) <- colnames(x)
       if(sum(is.na(temp)>0)){
@@ -92,7 +92,7 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
     ## compute regularized eqtl relations when requested reg=TRUE
     ## AND there are at least 2 eqtl SNPs
     if(reg & ncol(x)>=2){
-      out <- cv.glmnet(x,y,family='gaussian',alpha=alpha)
+      out <- glmnet::cv.glmnet(x,y,family='gaussian',alpha=alpha)
       if(out$lambda[1]==out$lambda.1se){
         warning(paste0("need to choose larger lambdas for gs",ii))
       }

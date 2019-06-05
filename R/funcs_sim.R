@@ -1,11 +1,9 @@
 #### functions for simulating data and choosing
 #### parameters for simulation
 
-library(MASS)
-
 ## simulate data
 SimulateData <- function(params){
-  ## for now either simulate old linkage structure or do independent bernoullis 
+  ## for now either simulate old linkage structure or do independent bernoullis
   if(params$linkage=="empty" & nrow(params$eqtl)==3){
     s1 <- rnorm(params$n,mean=-.3)
     s2 <- sqrt(.5)*s1 + sqrt(.5)*rnorm(params$n,mean=-.3)
@@ -53,7 +51,7 @@ SimulateData <- function(params){
     # cc[sample(c(TRUE,FALSE),replace=TRUE,size=length(cc))] <- Inf
     # death <- 1*(tt<=cc)
     # tt <- pmin(tt,cc)
-    y <- Surv(tt,death)
+    y <- survival::Surv(tt,death)
   }
   return(list(y=y,gs=gs,snp=snp,co=co,eqtl=params$eqtl,family=params$family))
 }
