@@ -10,6 +10,6 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     glmnet  (>= 2.0-16),
-    Rgraphviz,
-    MASS,
-    survival
+    MASS (>= 7.3-51.1),
+    survival (>= 2.43-3),
+    Rgraphviz (>= 2.26.0)
