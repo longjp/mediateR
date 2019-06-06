@@ -170,7 +170,7 @@ ComputeSNPp <- function(dat,fit,ii,dox,doxpa,gsn,rmean){
   snp_s <- dat$snp
   snp_s[,ii] <- doxpa
   if(gsn){
-    err <- mvrnorm(nrow(dat$gs),rep(0,ncol(dat$gs)),fit$cov_gs)
+    err <- MASS::mvrnorm(nrow(dat$gs),rep(0,ncol(dat$gs)),fit$cov_gs)
   } else {
     err <- matrix(rnorm(prod(dim(dat$gs)),mean=0,sd=sqrt(fit$var_gs)),
                   nrow=nrow(dat$gs),byrow=TRUE)
@@ -375,7 +375,7 @@ MakeGraphNELObject <- function(eqtl,snp_direct,gs_direct,gs_path=NULL){
     }
   }
   edL[[length(edL)]] <- list(edges=c(),weights=c())
-  gR <- graphNEL(nodes=l, edgeL=edL, edgemode="directed")
+  gR <- Rgraphviz::graphNEL(nodes=l, edgeL=edL, edgemode="directed")
   return(gR)
 }
 

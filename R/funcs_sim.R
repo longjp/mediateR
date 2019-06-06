@@ -26,7 +26,7 @@ SimulateData <- function(params){
     dag <- params$dag
     Q <- solve(diag(1,nrow(dag$path)) - dag$path)
     cov_gs <- Q%*%diag(dag$var)%*%t(Q)
-    err <- mvrnorm(params$n,rep(0,nrow(cov_gs)),cov_gs)
+    err <- MASS::mvrnorm(params$n,rep(0,nrow(cov_gs)),cov_gs)
     mu <- snp%*%params$eqtl_model + co%*%params$co_gs
     mu <- t(Q%*%t(mu))
     gs <- mu + err
