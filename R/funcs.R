@@ -3,55 +3,55 @@
 
 ## computes path coefficients
 ##    arguments
-##         dat$snp   :   n x p matrix with snp values
-##          dat$gs   :   n x q matrix with gene set values
-##        dat$eqtl   :   p x q 0,1 matrix with eqtl[i,j] = 1 if eqtl between snp i and gs j
+##         dat$xx   :   n x p matrix with xx values
+##          dat$mm   :   n x q matrix with gene set values
+##        dat$eqtl   :   p x q 0,1 matrix with eqtl[i,j] = 1 if eqtl between xx i and mm j
 ##          dat$co   :   n x r matrix with covariates, NULL if no covariates
 ##           dat$y   :   length n response vector
 ##      dat$family   :   gaussian for continuous y, binomial for binary y
 ##             reg   :   should direct effect estimates be regularized
-##             gsr   :   should residuals from gs | snp regression be returned, if FALSE return NULL
+##             mmr   :   should residuals from mm | xx regression be returned, if FALSE return NULL
 ##
 ##      value
 ##        list with eqtl_model, direct, and covariates-gene set coefficients
-ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
+ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
   ## unpack list
-  snp <- dat$snp
-  gs <- dat$gs
+  xx <- dat$xx
+  mm <- dat$mm
   y <- dat$y
   eqtl <- dat$eqtl
   co <- dat$co
   family <- dat$family
   if(is.null(co)){
-    co <- matrix(0,nrow=nrow(snp),ncol=0)
+    co <- matrix(0,nrow=nrow(xx),ncol=0)
   }
   ## argument checks
-  if(nrow(snp)!=nrow(gs)){
-    stop("gs and snp must have same number of rows")
+  if(nrow(xx)!=nrow(mm)){
+    stop("mm and xx must have same number of rows")
   }
-  if(length(y)!=nrow(gs)){
-    stop("gs and y must have same number of rows")
+  if(length(y)!=nrow(mm)){
+    stop("mm and y must have same number of rows")
   }
   if(!(family %in% c("gaussian","binomial","cox"))){
     stop("family must be either gaussian (for OLS), binomial (for logistic), or cox (with right censored survival y)")
   }
-  if((nrow(snp) < ncol(snp) + ncol(gs) + ncol(co)) & !reg){
+  if((nrow(xx) < ncol(xx) + ncol(mm) + ncol(co)) & !reg){
     stop("reg must be TRUE if p > n")
   }
-  ## create matrix for storing gs residuals, if requested
-  if(gsr){
-    gs_resid <- matrix(0,nrow=nrow(gs),ncol=ncol(gs))
+  ## create matrix for storing mm residuals, if requested
+  if(mmr){
+    mm_resid <- matrix(0,nrow=nrow(mm),ncol=ncol(mm))
   } else {
-    gs_resid <- NULL
+    mm_resid <- NULL
   }
   n_co <- ncol(co)
-  ## store snp-gs coefficients in list before transforming to eqtl_model
-  coeffs <- vector("list",length=ncol(gs))
-  ## store snp-gs constant coefficients and variances of fits
-  const_gs <- rep(0,ncol(gs))
-  var_gs <- rep(0,ncol(gs))
+  ## store xx-mm coefficients in list before transforming to eqtl_model
+  coeffs <- vector("list",length=ncol(mm))
+  ## store xx-mm constant coefficients and variances of fits
+  const_mm <- rep(0,ncol(mm))
+  var_mm <- rep(0,ncol(mm))
   ## regress y on everything to get direct effects
-  x <- cbind(snp,gs,co)
+  x <- cbind(xx,mm,co)
   alpha <- 0.99 ## balance of L1 versus L2 used in glmnet
   if(reg){
     out <- glmnet::cv.glmnet(x,y,family=family,alpha=alpha)
@@ -85,16 +85,16 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
     direct <- temp
     const_direct <- 0
   }
-  names(direct) <- c(colnames(snp),colnames(gs),colnames(co))
-  for(ii in 1:ncol(gs)){
-    x <- cbind(snp[,eqtl[,ii]==1,drop=FALSE],co)
-    y <- gs[,ii]
+  names(direct) <- c(colnames(xx),colnames(mm),colnames(co))
+  for(ii in 1:ncol(mm)){
+    x <- cbind(xx[,eqtl[,ii]==1,drop=FALSE],co)
+    y <- mm[,ii]
     ## compute regularized eqtl relations when requested reg=TRUE
-    ## AND there are at least 2 eqtl SNPs
+    ## AND there are at least 2 eqtl xxs
     if(reg & ncol(x)>=2){
       out <- glmnet::cv.glmnet(x,y,family='gaussian',alpha=alpha)
       if(out$lambda[1]==out$lambda.1se){
-        warning(paste0("need to choose larger lambdas for gs",ii))
+        warning(paste0("need to choose larger lambdas for mm",ii))
       }
       temp <- coef(out)[,1]
       rs <- predict(out,newx=x) - y
@@ -109,26 +109,26 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
       }
       names(temp) <- c("intercept",colnames(x))
     }
-    const_gs[ii] <- temp[1]
-    if(gsr){
-      gs_resid[,ii] <- rs
+    const_mm[ii] <- temp[1]
+    if(mmr){
+      mm_resid[,ii] <- rs
     }
-    var_gs[ii] <- mean(rs^2)
+    var_mm[ii] <- mean(rs^2)
     if(ncol(x) > 0){
       coeffs[[ii]] <- temp[2:length(temp)]
     }
   }
-  ## store coeffs in eqtl_model and co_gs
+  ## store coeffs in eqtl_model and co_mm
   eqtl_model <- eqtl
   eqtl_model[,] <- 0
-  co_gs <- matrix(0,nrow=n_co,ncol=ncol(eqtl))
-  colnames(co_gs) <- colnames(gs)
-  rownames(co_gs) <- colnames(co)
-  for(ii in 1:ncol(gs)){
+  co_mm <- matrix(0,nrow=n_co,ncol=ncol(eqtl))
+  colnames(co_mm) <- colnames(mm)
+  rownames(co_mm) <- colnames(co)
+  for(ii in 1:ncol(mm)){
     if(!is.null(coeffs[[ii]])){
       te <- coeffs[[ii]]
       if(n_co>0){
-        co_gs[,ii] <- te[(length(te)-n_co+1):length(te)]
+        co_mm[,ii] <- te[(length(te)-n_co+1):length(te)]
       }
       if(length(te) > n_co){
         te <- te[1:(length(te)-n_co)]
@@ -136,28 +136,28 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,gsr=FALSE){
       }
     }
   }
-  ## break direct into snps, gs, co
-  names(direct) <- c(colnames(snp),colnames(gs),colnames(co))
-  snp_direct <- direct[1:nrow(eqtl_model)]
-  gs_direct <- direct[(nrow(eqtl_model)+1):(length(direct)-n_co)]
+  ## break direct into xx, mm, co
+  names(direct) <- c(colnames(xx),colnames(mm),colnames(co))
+  xx_direct <- direct[1:nrow(eqtl_model)]
+  mm_direct <- direct[(nrow(eqtl_model)+1):(length(direct)-n_co)]
   if(n_co > 0){
     co_direct <- direct[(length(direct)-n_co+1):length(direct)]
   } else {
     co_direct <- NULL
   }
-  return(list(snp_direct=snp_direct,gs_direct=gs_direct,co_direct=co_direct,const_direct=const_direct,
-              eqtl_model=eqtl_model,co_gs=co_gs,const_gs=const_gs,var_gs=var_gs,gs_resid=gs_resid,directfit=directfit))
+  return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
+              eqtl_model=eqtl_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,directfit=directfit))
 }
 
 ## input direct and eqtl relations, outputs direct and indirect effects table
 ## WARNING: only appropriate for linear model where effects are sums of products
-ComputeDirectIndirect <- function(eqtl,snp_direct,gs_direct){
-  ## indirect effects are product: sum_{gene set} (SNP -> gene set) x (gene_set -> y)
-  snp_indirect <- colSums(t(eqtl)*gs_direct)
+ComputeDirectIndirect <- function(eqtl,xx_direct,mm_direct){
+  ## indirect effects are product: sum_{gene set} (xx -> gene set) x (gene_set -> y)
+  xx_indirect <- colSums(t(eqtl)*mm_direct)
   ## add indirect effects of gene sets (by definition 0)
-  indirect <- c(snp_indirect,rep(0,ncol(eqtl)))
+  indirect <- c(xx_indirect,rep(0,ncol(eqtl)))
   ## put output in data frame
-  direct <- c(snp_direct,gs_direct)
+  direct <- c(xx_direct,mm_direct)
   eff <- cbind(direct,indirect,direct+indirect)
   rownames(eff) <- c(rownames(eqtl),colnames(eqtl))
   colnames(eff) <- c("direct","indirect","total")
@@ -165,22 +165,22 @@ ComputeDirectIndirect <- function(eqtl,snp_direct,gs_direct){
 }
 
 
-ComputeSNPp <- function(dat,fit,ii,dox,doxpa,gsn,rmean){
-  ## simulate gs data
-  snp_s <- dat$snp
-  snp_s[,ii] <- doxpa
-  if(gsn){
-    err <- MASS::mvrnorm(nrow(dat$gs),rep(0,ncol(dat$gs)),fit$cov_gs)
+Computexxp <- function(dat,fit,ii,dox,doxpa,mmn,rmean){
+  ## simulate mm data
+  xx_s <- dat$xx
+  xx_s[,ii] <- doxpa
+  if(mmn){
+    err <- MASS::mvrnorm(nrow(dat$mm),rep(0,ncol(dat$mm)),fit$cov_mm)
   } else {
-    err <- matrix(rnorm(prod(dim(dat$gs)),mean=0,sd=sqrt(fit$var_gs)),
-                  nrow=nrow(dat$gs),byrow=TRUE)
+    err <- matrix(rnorm(prod(dim(dat$mm)),mean=0,sd=sqrt(fit$var_mm)),
+                  nrow=nrow(dat$mm),byrow=TRUE)
   }
-  gs_s <- snp_s %*% fit$eqtl_model + dat$co %*% fit$co_gs + err
-  gs_s <- t(t(gs_s) + fit$const_gs)
-  ## set snp to dox
-  snp_s[,ii] <- dox
-  x <- cbind(1,snp_s,gs_s,dat$co)
-  direct <- c(fit$const_direct,fit$snp_direct,fit$gs_direct,fit$co_direct)
+  mm_s <- xx_s %*% fit$eqtl_model + dat$co %*% fit$co_mm + err
+  mm_s <- t(t(mm_s) + fit$const_mm)
+  ## set xx to dox
+  xx_s[,ii] <- dox
+  x <- cbind(1,xx_s,mm_s,dat$co)
+  direct <- c(fit$const_direct,fit$xx_direct,fit$mm_direct,fit$co_direct)
   preds <- colSums(t(x)*direct)
   ## transform to logistic scale
   if(dat$family=="binomial"){
@@ -189,7 +189,7 @@ ComputeSNPp <- function(dat,fit,ii,dox,doxpa,gsn,rmean){
   ## compute mean restricted survival
   if(dat$family=="cox"){
     ## get baseline predictions
-    x <- cbind(1,dat$snp,dat$gs,dat$co)
+    x <- cbind(1,dat$xx,dat$mm,dat$co)
     preds0 <- colSums(t(x)*direct)
     ## get baseline hazard using linear predictors and response
     H0 <- ComputeBaselineSurvival(dat$y,preds0)
@@ -243,19 +243,19 @@ ComputeBaselineSurvival <- function(y,preds0){
 }
 
 
-## computes direct, indirect, or total effects of snp
+## computes direct, indirect, or total effects of xx
 ##    arguments
-##         dat   :   list of snp, gs, eqtl, co, y, family
+##         dat   :   list of xx, mm, eqtl, co, y, family
 ##         fit   :   output from ComputeDirecteQTL (path coefficients) or
 ##                   the true coefficients if we are approximating the true value
 ##  risk_scale   :   "diff" for risk difference, "ratio" for odds ratio
-##         gsn   :   should gene set network be simulated
+##         mmn   :   should gene set network be simulated
 ##
 ##      value
-##        vector with all SNP effects
-ComputeEffectSNP <- function(dat,fit,effect,risk_scale=NULL,gsn=FALSE,rmean=NULL){
+##        vector with all xx effects
+ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL){
   if(dat$family=="cox" & is.null(rmean)){
-    stop("In ComputeEffectSNP, rmean must be non NULL for dat$family=cox")
+    stop("In ComputeEffectxx, rmean must be non NULL for dat$family=cox")
   }
   ## by default gaussian family is computed on risk difference scale
   ## and binomial family is computed on odds ratio, but computing binomial
@@ -269,9 +269,9 @@ ComputeEffectSNP <- function(dat,fit,effect,risk_scale=NULL,gsn=FALSE,rmean=NULL
     }
   }
   if(is.null(dat$co)){
-    dat$co <- matrix(0,nrow=nrow(dat$snp),ncol=0)
+    dat$co <- matrix(0,nrow=nrow(dat$xx),ncol=0)
     fit$co_direct <- NULL
-    fit$co_gs <- matrix(0,nrow=0,ncol=ncol(dat$eqtl))
+    fit$co_mm <- matrix(0,nrow=0,ncol=ncol(dat$eqtl))
   }
   ## effects are functions of p_xy - p_ij where x,y,i,j are in 0,1
   ## here we determine which to compute
@@ -295,8 +295,8 @@ ComputeEffectSNP <- function(dat,fit,effect,risk_scale=NULL,gsn=FALSE,rmean=NULL
   }
   total_effects <- rep(0,nrow(dat$eqtl))
   for(ii in 1:nrow(dat$eqtl)){
-    preds0 <- ComputeSNPp(dat,fit,ii,dox0,doxpa0,gsn,rmean)
-    preds1 <- ComputeSNPp(dat,fit,ii,dox1,doxpa1,gsn,rmean)
+    preds0 <- Computexxp(dat,fit,ii,dox0,doxpa0,mmn,rmean)
+    preds1 <- Computexxp(dat,fit,ii,dox1,doxpa1,mmn,rmean)
     ## report on the risk difference scale
     if(risk_scale=="diff"){
       total_effects[ii] <- mean(preds1) - mean(preds0)
@@ -323,8 +323,8 @@ ComputeDAGCov <- function(dag){
 ## useful when bootstrap sampling
 SubsetDat <- function(dat,ix){
   dat$y <- dat$y[ix]
-  dat$gs <- dat$gs[ix,,drop=FALSE]
-  dat$snp <- dat$snp[ix,,drop=FALSE]
+  dat$mm <- dat$mm[ix,,drop=FALSE]
+  dat$xx <- dat$xx[ix,,drop=FALSE]
   dat$co <- dat$co[ix,,drop=FALSE]
   return(dat)
 }
@@ -335,58 +335,58 @@ SubsetDat <- function(dat,ix){
 
 ## returns subgraph (as eqtl matrix) which has causal influence on y
 FindSubgraph <- function(params){
-  temp <- rowSums(params$eqtl_model[,params$gs_direct!=0,drop=FALSE]!=0)!=0
-  snp_to_keep <- temp | params$snp_direct!=0
-  gs_to_keep <- params$gs_direct!=0
-  return(params$eqtl_model[snp_to_keep,gs_to_keep,drop=FALSE])
+  temp <- rowSums(params$eqtl_model[,params$mm_direct!=0,drop=FALSE]!=0)!=0
+  xx_to_keep <- temp | params$xx_direct!=0
+  mm_to_keep <- params$mm_direct!=0
+  return(params$eqtl_model[xx_to_keep,mm_to_keep,drop=FALSE])
 }
 
 ## creates GraphNEL object which can then
 ## be plotted
-MakeGraphNELObject <- function(eqtl,snp_direct,gs_direct,gs_path=NULL){
-  if(is.null(gs_path)){
-    gs_path <- matrix(0,nrow=length(gs_direct),ncol=length(gs_direct))
+MakeGraphNELObject <- function(eqtl,xx_direct,mm_direct,mm_path=NULL){
+  if(is.null(mm_path)){
+    mm_path <- matrix(0,nrow=length(mm_direct),ncol=length(mm_direct))
   }
   l <- c("h",rownames(eqtl),colnames(eqtl),"y")
   edL <- vector("list",length=length(l))
   names(edL) <- l
-  ## draw arrows from h to snps
+  ## draw arrows from h to xxs
   edL[[1]] <- list(edges=2:(nrow(eqtl)+1),weights=rep(1,nrow(eqtl)))
-  ## snp arrows
+  ## xx arrows
   for(ii in 2:(nrow(eqtl)+1)){
     ix <- which(eqtl[ii-1,]!=0) + nrow(eqtl)+1
     names(ix) <- NULL
-    if(snp_direct[ii-1]!=0){
+    if(xx_direct[ii-1]!=0){
       ix <- c(ix,sum(dim(eqtl))+2)
     }
     edL[[ii]] <- list(edges=ix,weights=rep(1,length(ix)))
   }
-  ## gs arrows
+  ## mm arrows
   for(ii in (nrow(eqtl)+2):(nrow(eqtl)+ncol(eqtl)+1)){
     jj <- ii - nrow(eqtl) - 1
-    if(gs_direct[jj]!=0){
+    if(mm_direct[jj]!=0){
       edL[[ii]] <- list(edges=nrow(eqtl)+ncol(eqtl)+2,weights=1)
     } else {
       edL[[ii]] <- list(edges=c(),weights=c())
     }
-    if(length(which(gs_path[,jj]!=0))!=0){
+    if(length(which(mm_path[,jj]!=0))!=0){
       edL[[ii]]$edges <- c(edL[[ii]]$edges,which(path[,jj]!=0) + nrow(eqtl) + 1)
       edL[[ii]]$weights <- rep(1,length(edL[[ii]]$edges))
     }
   }
   edL[[length(edL)]] <- list(edges=c(),weights=c())
-  gR <- Rgraphviz::graphNEL(nodes=l, edgeL=edL, edgemode="directed")
+  gR <- graph::graphNEL(nodes=l, edgeL=edL, edgemode="directed")
   return(gR)
 }
 
 
-## makes edge attributes for graphNEL plotting using eqtl_model (gs, SNP coeffs) and direct effects
-MakeedgeAttrs <- function(eqtl_model,snp_direct,gs_direct,path=NULL){
+## makes edge attributes for graphNEL plotting using eqtl_model (mm, xx coeffs) and direct effects
+MakeedgeAttrs <- function(eqtl_model,xx_direct,mm_direct,path=NULL){
   ew <- as.vector(eqtl_model)
   names(ew) <- unlist(lapply(colnames(eqtl_model),function(x){paste0(rownames(eqtl_model),"~",x)}))
   ew <- round(ew,2)
-  ef <- c(snp_direct,gs_direct)
-  names(ef) <- paste0(c(names(snp_direct),names(gs_direct)),"~y")
+  ef <- c(xx_direct,mm_direct)
+  names(ef) <- paste0(c(names(xx_direct),names(mm_direct)),"~y")
   ef <- round(ef,2)
   ew <- c(ew,ef)
   if(!is.null(path)){
