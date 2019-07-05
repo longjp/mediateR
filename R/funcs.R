@@ -310,15 +310,6 @@ ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL)
 }
 
 
-## determines covariance of dag based on path coefficients
-## and variances
-ComputeDAGCov <- function(dag){
-  Q <- solve(diag(1,nrow(dag$path)) - dag$path)
-  return(Q%*%diag(dag$var)%*%t(Q))
-}
-
-
-
 ## subsets data, selecting only ix rows
 ## useful when bootstrap sampling
 SubsetDat <- function(dat,ix){
