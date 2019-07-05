@@ -253,7 +253,7 @@ ComputeBaselineSurvival <- function(y,preds0){
 ##
 ##      value
 ##        vector with all xx effects
-ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL){
+ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,rmean=NULL){
   if(dat$family=="cox" & is.null(rmean)){
     stop("In ComputeEffectxx, rmean must be non NULL for dat$family=cox")
   }
@@ -273,25 +273,25 @@ ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL)
     fit$co_direct <- NULL
     fit$co_mm <- matrix(0,nrow=0,ncol=ncol(dat$path))
   }
-  ## effects are functions of p_xy - p_ij where x,y,i,j are in 0,1
+  ## effects are differences of e(i,j) where i,j are xp or xpp, see paper for details
   ## here we determine which to compute
   if(effect=="direct"){
-    dox1 <- 1
-    doxpa1 <- 0
-    dox0 <- 0
-    doxpa0 <- 0
+    dox1 <- xpp
+    doxpa1 <- xp
+    dox0 <- xp
+    doxpa0 <- xp
   }
   if(effect=="total"){
-    dox1 <- 1
-    doxpa1 <- 1
-    dox0 <- 0
-    doxpa0 <- 0
+    dox1 <- xpp
+    doxpa1 <- xpp
+    dox0 <- xp
+    doxpa0 <- xp
   }
   if(effect=="indirect"){
-    dox1 <- 1
-    doxpa1 <- 1
-    dox0 <- 1
-    doxpa0 <- 0
+    dox1 <- xpp
+    doxpa1 <- xpp
+    dox0 <- xpp
+    doxpa0 <- xp
   }
   total_effects <- rep(0,nrow(dat$path))
   for(ii in 1:nrow(dat$path)){
