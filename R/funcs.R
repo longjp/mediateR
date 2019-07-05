@@ -5,7 +5,7 @@
 ##    arguments
 ##         dat$xx   :   n x p matrix with xx values
 ##          dat$mm   :   n x q matrix with gene set values
-##        dat$eqtl   :   p x q 0,1 matrix with eqtl[i,j] = 1 if eqtl between xx i and mm j
+##        dat$path   :   p x q 0,1 matrix with path[i,j] = 1 if path between xx i and mm j
 ##          dat$co   :   n x r matrix with covariates, NULL if no covariates
 ##           dat$y   :   length n response vector
 ##      dat$family   :   gaussian for continuous y, binomial for binary y
@@ -13,13 +13,13 @@
 ##             mmr   :   should residuals from mm | xx regression be returned, if FALSE return NULL
 ##
 ##      value
-##        list with eqtl_model, direct, and covariates-gene set coefficients
-ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
+##        list with path_model, direct, and covariates-gene set coefficients
+ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
   ## unpack list
   xx <- dat$xx
   mm <- dat$mm
   y <- dat$y
-  eqtl <- dat$eqtl
+  path <- dat$path
   co <- dat$co
   family <- dat$family
   if(is.null(co)){
@@ -45,7 +45,7 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
     mm_resid <- NULL
   }
   n_co <- ncol(co)
-  ## store xx-mm coefficients in list before transforming to eqtl_model
+  ## store xx-mm coefficients in list before transforming to path_model
   coeffs <- vector("list",length=ncol(mm))
   ## store xx-mm constant coefficients and variances of fits
   const_mm <- rep(0,ncol(mm))
@@ -87,10 +87,10 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
   }
   names(direct) <- c(colnames(xx),colnames(mm),colnames(co))
   for(ii in 1:ncol(mm)){
-    x <- cbind(xx[,eqtl[,ii]==1,drop=FALSE],co)
+    x <- cbind(xx[,path[,ii]==1,drop=FALSE],co)
     y <- mm[,ii]
-    ## compute regularized eqtl relations when requested reg=TRUE
-    ## AND there are at least 2 eqtl xxs
+    ## compute regularized path relations when requested reg=TRUE
+    ## AND there are at least 2 path xxs
     if(reg & ncol(x)>=2){
       out <- glmnet::cv.glmnet(x,y,family='gaussian',alpha=alpha)
       if(out$lambda[1]==out$lambda.1se){
@@ -118,10 +118,10 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
       coeffs[[ii]] <- temp[2:length(temp)]
     }
   }
-  ## store coeffs in eqtl_model and co_mm
-  eqtl_model <- eqtl
-  eqtl_model[,] <- 0
-  co_mm <- matrix(0,nrow=n_co,ncol=ncol(eqtl))
+  ## store coeffs in path_model and co_mm
+  path_model <- path
+  path_model[,] <- 0
+  co_mm <- matrix(0,nrow=n_co,ncol=ncol(path))
   colnames(co_mm) <- colnames(mm)
   rownames(co_mm) <- colnames(co)
   for(ii in 1:ncol(mm)){
@@ -132,34 +132,34 @@ ComputeDirecteQTL <- function(dat,reg=FALSE,mmr=FALSE){
       }
       if(length(te) > n_co){
         te <- te[1:(length(te)-n_co)]
-        eqtl_model[names(te),ii] <- te
+        path_model[names(te),ii] <- te
       }
     }
   }
   ## break direct into xx, mm, co
   names(direct) <- c(colnames(xx),colnames(mm),colnames(co))
-  xx_direct <- direct[1:nrow(eqtl_model)]
-  mm_direct <- direct[(nrow(eqtl_model)+1):(length(direct)-n_co)]
+  xx_direct <- direct[1:nrow(path_model)]
+  mm_direct <- direct[(nrow(path_model)+1):(length(direct)-n_co)]
   if(n_co > 0){
     co_direct <- direct[(length(direct)-n_co+1):length(direct)]
   } else {
     co_direct <- NULL
   }
   return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
-              eqtl_model=eqtl_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,directfit=directfit))
+              path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,directfit=directfit))
 }
 
-## input direct and eqtl relations, outputs direct and indirect effects table
+## input direct and path relations, outputs direct and indirect effects table
 ## WARNING: only appropriate for linear model where effects are sums of products
-ComputeDirectIndirect <- function(eqtl,xx_direct,mm_direct){
+ComputeDirectIndirect <- function(path,xx_direct,mm_direct){
   ## indirect effects are product: sum_{gene set} (xx -> gene set) x (gene_set -> y)
-  xx_indirect <- colSums(t(eqtl)*mm_direct)
+  xx_indirect <- colSums(t(path)*mm_direct)
   ## add indirect effects of gene sets (by definition 0)
-  indirect <- c(xx_indirect,rep(0,ncol(eqtl)))
+  indirect <- c(xx_indirect,rep(0,ncol(path)))
   ## put output in data frame
   direct <- c(xx_direct,mm_direct)
   eff <- cbind(direct,indirect,direct+indirect)
-  rownames(eff) <- c(rownames(eqtl),colnames(eqtl))
+  rownames(eff) <- c(rownames(path),colnames(path))
   colnames(eff) <- c("direct","indirect","total")
   return(eff)
 }
@@ -175,7 +175,7 @@ Computexxp <- function(dat,fit,ii,dox,doxpa,mmn,rmean){
     err <- matrix(rnorm(prod(dim(dat$mm)),mean=0,sd=sqrt(fit$var_mm)),
                   nrow=nrow(dat$mm),byrow=TRUE)
   }
-  mm_s <- xx_s %*% fit$eqtl_model + dat$co %*% fit$co_mm + err
+  mm_s <- xx_s %*% fit$path_model + dat$co %*% fit$co_mm + err
   mm_s <- t(t(mm_s) + fit$const_mm)
   ## set xx to dox
   xx_s[,ii] <- dox
@@ -245,8 +245,8 @@ ComputeBaselineSurvival <- function(y,preds0){
 
 ## computes direct, indirect, or total effects of xx
 ##    arguments
-##         dat   :   list of xx, mm, eqtl, co, y, family
-##         fit   :   output from ComputeDirecteQTL (path coefficients) or
+##         dat   :   list of xx, mm, path, co, y, family
+##         fit   :   output from ComputePath (path coefficients) or
 ##                   the true coefficients if we are approximating the true value
 ##  risk_scale   :   "diff" for risk difference, "ratio" for odds ratio
 ##         mmn   :   should gene set network be simulated
@@ -271,7 +271,7 @@ ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL)
   if(is.null(dat$co)){
     dat$co <- matrix(0,nrow=nrow(dat$xx),ncol=0)
     fit$co_direct <- NULL
-    fit$co_mm <- matrix(0,nrow=0,ncol=ncol(dat$eqtl))
+    fit$co_mm <- matrix(0,nrow=0,ncol=ncol(dat$path))
   }
   ## effects are functions of p_xy - p_ij where x,y,i,j are in 0,1
   ## here we determine which to compute
@@ -293,8 +293,8 @@ ComputeEffectxx <- function(dat,fit,effect,risk_scale=NULL,mmn=FALSE,rmean=NULL)
     dox0 <- 1
     doxpa0 <- 0
   }
-  total_effects <- rep(0,nrow(dat$eqtl))
-  for(ii in 1:nrow(dat$eqtl)){
+  total_effects <- rep(0,nrow(dat$path))
+  for(ii in 1:nrow(dat$path)){
     preds0 <- Computexxp(dat,fit,ii,dox0,doxpa0,mmn,rmean)
     preds1 <- Computexxp(dat,fit,ii,dox1,doxpa1,mmn,rmean)
     ## report on the risk difference scale
@@ -324,44 +324,44 @@ SubsetDat <- function(dat,ix){
 #########
 ######### PLOTTING AND DISPLAY FUNCTIONS
 
-## returns subgraph (as eqtl matrix) which has causal influence on y
+## returns subgraph (as path matrix) which has causal influence on y
 FindSubgraph <- function(params){
-  temp <- rowSums(params$eqtl_model[,params$mm_direct!=0,drop=FALSE]!=0)!=0
+  temp <- rowSums(params$path_model[,params$mm_direct!=0,drop=FALSE]!=0)!=0
   xx_to_keep <- temp | params$xx_direct!=0
   mm_to_keep <- params$mm_direct!=0
-  return(params$eqtl_model[xx_to_keep,mm_to_keep,drop=FALSE])
+  return(params$path_model[xx_to_keep,mm_to_keep,drop=FALSE])
 }
 
 ## creates GraphNEL object which can then
 ## be plotted
-MakeGraphNELObject <- function(eqtl,xx_direct,mm_direct,mm_path=NULL){
+MakeGraphNELObject <- function(path,xx_direct,mm_direct,mm_path=NULL){
   if(is.null(mm_path)){
     mm_path <- matrix(0,nrow=length(mm_direct),ncol=length(mm_direct))
   }
-  l <- c("h",rownames(eqtl),colnames(eqtl),"y")
+  l <- c("h",rownames(path),colnames(path),"y")
   edL <- vector("list",length=length(l))
   names(edL) <- l
   ## draw arrows from h to xxs
-  edL[[1]] <- list(edges=2:(nrow(eqtl)+1),weights=rep(1,nrow(eqtl)))
+  edL[[1]] <- list(edges=2:(nrow(path)+1),weights=rep(1,nrow(path)))
   ## xx arrows
-  for(ii in 2:(nrow(eqtl)+1)){
-    ix <- which(eqtl[ii-1,]!=0) + nrow(eqtl)+1
+  for(ii in 2:(nrow(path)+1)){
+    ix <- which(path[ii-1,]!=0) + nrow(path)+1
     names(ix) <- NULL
     if(xx_direct[ii-1]!=0){
-      ix <- c(ix,sum(dim(eqtl))+2)
+      ix <- c(ix,sum(dim(path))+2)
     }
     edL[[ii]] <- list(edges=ix,weights=rep(1,length(ix)))
   }
   ## mm arrows
-  for(ii in (nrow(eqtl)+2):(nrow(eqtl)+ncol(eqtl)+1)){
-    jj <- ii - nrow(eqtl) - 1
+  for(ii in (nrow(path)+2):(nrow(path)+ncol(path)+1)){
+    jj <- ii - nrow(path) - 1
     if(mm_direct[jj]!=0){
-      edL[[ii]] <- list(edges=nrow(eqtl)+ncol(eqtl)+2,weights=1)
+      edL[[ii]] <- list(edges=nrow(path)+ncol(path)+2,weights=1)
     } else {
       edL[[ii]] <- list(edges=c(),weights=c())
     }
     if(length(which(mm_path[,jj]!=0))!=0){
-      edL[[ii]]$edges <- c(edL[[ii]]$edges,which(path[,jj]!=0) + nrow(eqtl) + 1)
+      edL[[ii]]$edges <- c(edL[[ii]]$edges,which(path[,jj]!=0) + nrow(path) + 1)
       edL[[ii]]$weights <- rep(1,length(edL[[ii]]$edges))
     }
   }
@@ -371,10 +371,10 @@ MakeGraphNELObject <- function(eqtl,xx_direct,mm_direct,mm_path=NULL){
 }
 
 
-## makes edge attributes for graphNEL plotting using eqtl_model (mm, xx coeffs) and direct effects
-MakeedgeAttrs <- function(eqtl_model,xx_direct,mm_direct,path=NULL){
-  ew <- as.vector(eqtl_model)
-  names(ew) <- unlist(lapply(colnames(eqtl_model),function(x){paste0(rownames(eqtl_model),"~",x)}))
+## makes edge attributes for graphNEL plotting using path_model (mm, xx coeffs) and direct effects
+MakeedgeAttrs <- function(path_model,xx_direct,mm_direct,path=NULL){
+  ew <- as.vector(path_model)
+  names(ew) <- unlist(lapply(colnames(path_model),function(x){paste0(rownames(path_model),"~",x)}))
   ew <- round(ew,2)
   ef <- c(xx_direct,mm_direct)
   names(ef) <- paste0(c(names(xx_direct),names(mm_direct)),"~y")
@@ -382,7 +382,7 @@ MakeedgeAttrs <- function(eqtl_model,xx_direct,mm_direct,path=NULL){
   ew <- c(ew,ef)
   if(!is.null(path)){
     enet <- as.vector(t(path))
-    names(enet) <- unlist(lapply(colnames(eqtl_model),function(x){paste0(colnames(eqtl_model),"~",x)}))
+    names(enet) <- unlist(lapply(colnames(path_model),function(x){paste0(colnames(path_model),"~",x)}))
     enet <- round(enet,2)
     enet <- enet[enet!=0]
     ew <- c(ew,enet)
