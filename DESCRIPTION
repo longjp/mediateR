@@ -13,3 +13,4 @@ Imports:
     MASS (>= 7.3-51.1),
     survival (>= 2.43-3),
     graph (>= 1.60.0)
+RoxygenNote: 6.1.1

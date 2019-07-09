@@ -1,8 +1,6 @@
 #########
 ######### COMPUTATION FUNCTIONS
 
-## computes path coefficients
-##    arguments
 ##         dat$xx   :   n x p matrix with xx values
 ##          dat$mm   :   n x q matrix with gene set values
 ##        dat$path   :   p x q 0,1 matrix with path[i,j] = 1 if path between xx i and mm j
@@ -14,6 +12,14 @@
 ##
 ##      value
 ##        list with path_model, direct, and covariates-gene set coefficients
+
+
+#' computes path coefficients
+#'
+#'  @param dat The data.
+#'  @param reg should path coefficient estimates be estimated using regularized regression.
+#'  @param mmr should graph structure of mediators be estimated
+#'  @return Path coefficients for the graph
 ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
   ## unpack list
   xx <- dat$xx
