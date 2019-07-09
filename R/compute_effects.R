@@ -1,10 +1,6 @@
 #########
 ######### COMPUTATION FUNCTIONS
 
-##
-##      value
-##        list with path_model, direct, and covariates-gene set coefficients
-
 
 #' Computes path coefficients.
 #'
@@ -19,8 +15,11 @@
 #'   with graph structure.
 #' @return List containing path coefficients, variance estimates, residuals.
 #' @examples
-#' ComputePath(x,y)
-#' ComputePath(y,z)
+#' params <- SimpleSim()
+#' dat <- SimulateData(params)
+#' fit <- ComputePath(dat)
+#' print(fit$xx_direct)
+#' print(params$xx_direct)
 #' @export
 ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
   ## unpack list
@@ -157,15 +156,29 @@ ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
               path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,directfit=directfit))
 }
 
-## input direct and path relations, outputs direct and indirect effects table
-## WARNING: only appropriate for linear model where effects are sums of products
-ComputeDirectIndirect <- function(path,xx_direct,mm_direct){
+#' Computes direct and indirect effects for linear models.
+#'
+#' \code{ComputeEffectsLinear} computes the direct and indirect effects
+#' for linear models. These are simple functions of the path coefficients.
+#' Argument can be path coefficients fitted to data, in format output by
+#' \code{ComputePath} or simulation parameters output by function such as
+#' \code{SimpleSim}.
+#'
+#' @param fit List with path coefficients.
+#' @return Matrix of direct, indirect, and total effects for each xx.
+#' @examples
+#' params <- SimpleSim()
+#' dat <- SimulateData(params)
+#' fit <- ComputePath(dat)
+#' ComputeEffectsLinear(params) ## exact
+#' ComputeEffectsLinear(fit) ## based on sample
+#' @export
+ComputeEffectsLinear <- function(fit){
   ## indirect effects are product: sum_{gene set} (xx -> gene set) x (gene_set -> y)
-  xx_indirect <- colSums(t(path)*mm_direct)
+  xx_indirect <- colSums(t(fit$path_model)*fit$mm_direct)
   ## add indirect effects of gene sets (by definition 0)
-  indirect <- c(xx_indirect,rep(0,ncol(path)))
-  ## put output in data frame
-  direct <- c(xx_direct,mm_direct)
+  indirect <- c(fit$xx_indirect,rep(0,ncol(fit$path_model)))
+  direct <- c(fit$xx_direct,fit$mm_direct)
   eff <- cbind(direct,indirect,direct+indirect)
   rownames(eff) <- c(rownames(path),colnames(path))
   colnames(eff) <- c("direct","indirect","total")
