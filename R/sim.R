@@ -106,6 +106,7 @@ SimpleSim <- function(n=500,family="gaussian"){
   const_direct <- pi
   ## mm variance
   var_mm <- 1
+  xx_prob <- 0.5
   sim_params <- list(n=n,path=path,path_model=path_model,
                      co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
                      xx_direct=xx_direct,mm_direct=mm_direct,
