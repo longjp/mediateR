@@ -1,25 +1,27 @@
 #########
 ######### COMPUTATION FUNCTIONS
 
-##         dat$xx   :   n x p matrix with xx values
-##          dat$mm   :   n x q matrix with gene set values
-##        dat$path   :   p x q 0,1 matrix with path[i,j] = 1 if path between xx i and mm j
-##          dat$co   :   n x r matrix with covariates, NULL if no covariates
-##           dat$y   :   length n response vector
-##      dat$family   :   gaussian for continuous y, binomial for binary y
-##             reg   :   should direct effect estimates be regularized
-##             mmr   :   should residuals from mm | xx regression be returned, if FALSE return NULL
 ##
 ##      value
 ##        list with path_model, direct, and covariates-gene set coefficients
 
 
-#' computes path coefficients
+#' Computes path coefficients.
 #'
-#'  @param dat The data.
-#'  @param reg should path coefficient estimates be estimated using regularized regression.
-#'  @param mmr should graph structure of mediators be estimated
-#'  @return Path coefficients for the graph
+#' \code{ComputePath} computes the coefficients for for all paths linking
+#' response, mediators, treatment and potential confounders.
+#'
+#' @param dat List containing data (see SimulateData for format)
+#' @param reg Should path coefficient estimates be regularized. Experimental.
+#'   Defaults to FALSE.
+#' @param mmr Should residuals from mm | xx regression be returned.
+#'   If FALSE return NULL. Must be true if estimating direct/indirect effects
+#'   with graph structure.
+#' @return List containing path coefficients, variance estimates, residuals.
+#' @examples
+#' ComputePath(x,y)
+#' ComputePath(y,z)
+#' @export
 ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
   ## unpack list
   xx <- dat$xx
@@ -169,7 +171,6 @@ ComputeDirectIndirect <- function(path,xx_direct,mm_direct){
   colnames(eff) <- c("direct","indirect","total")
   return(eff)
 }
-
 
 Computexxp <- function(dat,fit,ii,dox,doxpa,mmn,rmean){
   ## simulate mm data

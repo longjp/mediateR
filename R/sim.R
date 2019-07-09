@@ -1,7 +1,18 @@
-#### functions for simulating data and choosing
-#### parameters for simulation
+#### functions for simulating data
 
-## simulate data
+#' Generate simulation data.
+#'
+#' \code{SimulateData} creates simulation data set using specified
+#'   input parameters. Output \code{dat} is argument for fitting
+#'   path coefficients and direct and indirect effects.
+#'
+#' @param params Simulation parameters (see SimpleSim for format)
+#' @return List \code{dat} of simulation data.
+#' @examples
+#' set.seed(1234)
+#' params <- SimpleSim()
+#' dat <- SimulateData(params)
+#' @export
 SimulateData <- function(params){
   ## for now either simulate old linkage structure or do independent bernoullis
   if(params$linkage=="empty" & nrow(params$path)==3){
@@ -33,7 +44,8 @@ SimulateData <- function(params){
   }
   colnames(mm) <- colnames(params$path)
   ## simulate response y:
-  xbeta <- colSums(t(xx)*params$xx_direct) + colSums(t(co)*params$co_direct) + colSums(t(mm)*params$mm_direct)
+  xbeta <- (colSums(t(xx)*params$xx_direct) + colSums(t(co)*params$co_direct) +
+              colSums(t(mm)*params$mm_direct))
   if(params$family=="gaussian"){
     y <-  xbeta + rnorm(params$n)
   }
@@ -55,6 +67,55 @@ SimulateData <- function(params){
   }
   return(list(y=y,mm=mm,xx=xx,co=co,path=params$path,family=params$family))
 }
+
+#' Generate simulation parameters.
+#'
+#' \code{SimpleSim} creates simulation parameters which are then used
+#'   to generate data with \code{SimulateData}. Mostly used for testing.
+#'
+#' @param n Sample Size
+#' @param family Either 'gaussian', 'binomial', or 'cox' depending on
+#'   desired response model.
+#' @return List that the parameterizes simulation. Typically used as
+#'   argument in subsequent call to \code{SimulateData}
+#' @examples
+#' params <- SimpleSim()
+#' names(params)
+#' @export
+SimpleSim <- function(n=500,family="gaussian"){
+  xxnames <- "xx"
+  mmnames <- "mm"
+  xx_direct <- 2
+  names(xx_direct) <- xxnames
+  mm_direct <- 3
+  names(mm_direct) <- mmnames
+  ## create path variables
+  path <- matrix(1,nrow=1,ncol=1)
+  rownames(path) <- xxnames
+  colnames(path) <- mmnames
+  path_model <- matrix(2.5,nrow=1,ncol=1)
+  rownames(path_model) <- xxnames
+  colnames(path_model) <- mmnames
+  co_mm <- matrix(-0.5,nrow=1,ncol=1)
+  colnames(co_mm) <- colnames(path)
+  rownames(co_mm) <- rownames(path)
+  co_direct <- 1.5
+  names(co_direct) <- "co"
+  ## constant parameters
+  const_mm <- pi/2
+  const_direct <- pi
+  ## mm variance
+  var_mm <- 1
+  sim_params <- list(n=n,path=path,path_model=path_model,
+                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
+                     xx_direct=xx_direct,mm_direct=mm_direct,
+                     co_direct=co_direct,const_direct=const_direct,
+                     xx_prob=xx_prob,
+                     linkage="indep",family=family)
+  return(sim_params)
+}
+
+
 
 
 
@@ -85,7 +146,8 @@ QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5){
     path[4:nxx,1:2] <- 0
   }
   ## coefficients linking xx with mm
-  path_model <- matrix(1/2*sample(c(-1,1),size=nrow(path)*ncol(path),replace=TRUE),
+  path_model <- matrix(1/2*sample(c(-1,1),size=nrow(path)*ncol(path),
+                                  replace=TRUE),
                        nrow=nrow(path),ncol=ncol(path))
   path_model <- path_model*path
   ## fix path model for relevant subgraph
@@ -109,8 +171,10 @@ QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5){
   const_direct <- 0
   ## mm variance
   var_mm <- rep(1,ncol(path))
-  sim_params <- list(n=n,path=path,path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
-                     xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
+  sim_params <- list(n=n,path=path,path_model=path_model,
+                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
+                     xx_direct=xx_direct,mm_direct=mm_direct,
+                     co_direct=co_direct,const_direct=const_direct,
                      xx_prob=xx_prob,
                      linkage="indep",family=family)
   return(sim_params)
@@ -146,7 +210,8 @@ QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
   #   path[4:nxx,1:2] <- 0
   # }
   ## coefficients linking xx with mm
-  path_model <- matrix(1/2*sample(c(-1,1,0,0,0,0),size=nrow(path)*ncol(path),replace=TRUE),
+  path_model <- matrix(1/2*sample(c(-1,1,0,0,0,0),size=nrow(path)*ncol(path),
+                                  replace=TRUE),
                        nrow=nrow(path),ncol=ncol(path))
   path_model[1:10,1] <- 1/2*sample(c(-1,1),size=10,replace=TRUE)
   path_model[11:20,1] <- 0
@@ -167,8 +232,10 @@ QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
   const_direct <- 0
   ## mm variance
   var_mm <- rep(1,ncol(path))
-  sim_params <- list(n=n,path=path,path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
-                     xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
+  sim_params <- list(n=n,path=path,path_model=path_model,
+                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
+                     xx_direct=xx_direct,mm_direct=mm_direct,
+                     co_direct=co_direct,const_direct=const_direct,
                      xx_prob=xx_prob,
                      linkage="indep",family=family)
   return(sim_params)
@@ -179,7 +246,8 @@ QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
 # n = sample size
 # nmm = number of gene sets
 QuickSimMultipleMediator <- function(n,nmm,family,
-                                     var_mm=10,xx_direct=0.5,mm_direct=.5,xx_prob=0.2){
+                                     var_mm=10,xx_direct=0.5,
+                                     mm_direct=.5,xx_prob=0.2){
   nmm_min <- 5
   if(nmm < nmm_min){
     stop(paste0("nmm (number of mediators) must be at least ",nmm_min))
@@ -190,7 +258,8 @@ QuickSimMultipleMediator <- function(n,nmm,family,
   rownames(path) <- xxnames
   colnames(path) <- mmnames
   ## coefficients linking xx with mm
-  path_model <- matrix(c(rep(1.0,nmm_min),rep(0,ncol(path)-nmm_min)),nrow=nrow(path),ncol=ncol(path))
+  path_model <- matrix(c(rep(1.0,nmm_min),rep(0,ncol(path)-nmm_min)),
+                       nrow=nrow(path),ncol=ncol(path))
   colnames(path_model) <- mmnames
   rownames(path_model) <- xxnames
   ## simulate empy matrices for covariates
@@ -206,8 +275,10 @@ QuickSimMultipleMediator <- function(n,nmm,family,
   const_direct <- 0
   ## mm variance
   var_mm <- rep(var_mm,ncol(path))
-  sim_params <- list(n=n,path=path,path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
-                     xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
+  sim_params <- list(n=n,path=path,path_model=path_model,
+                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
+                     xx_direct=xx_direct,mm_direct=mm_direct,
+                     co_direct=co_direct,const_direct=const_direct,
                      xx_prob=xx_prob,
                      linkage="indep",family=family)
   return(sim_params)
@@ -250,8 +321,10 @@ OneDSim <- function(n,n_xx_noise=0,n_mm_noise=0,n_co=1,family="gaussian"){
   const_direct <- 0
   ## mm variance
   var_mm <- rep(1,ncol(path))
-  sim_params <- list(n=n,path=path,path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
-                     xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
+  sim_params <- list(n=n,path=path,path_model=path_model,
+                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
+                     xx_direct=xx_direct,mm_direct=mm_direct,
+                     co_direct=co_direct,const_direct=const_direct,
                      xx_prob=0.5,
                      linkage="indep",family=family)
   return(sim_params)
