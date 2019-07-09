@@ -167,6 +167,7 @@ ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
 #' @param fit List with path coefficients.
 #' @return Matrix of direct, indirect, and total effects for each xx.
 #' @examples
+#' set.seed(1234)
 #' params <- SimpleSim()
 #' dat <- SimulateData(params)
 #' fit <- ComputePath(dat)
@@ -177,10 +178,10 @@ ComputeEffectsLinear <- function(fit){
   ## indirect effects are product: sum_{gene set} (xx -> gene set) x (gene_set -> y)
   xx_indirect <- colSums(t(fit$path_model)*fit$mm_direct)
   ## add indirect effects of gene sets (by definition 0)
-  indirect <- c(fit$xx_indirect,rep(0,ncol(fit$path_model)))
+  indirect <- c(xx_indirect,rep(0,ncol(fit$path_model)))
   direct <- c(fit$xx_direct,fit$mm_direct)
   eff <- cbind(direct,indirect,direct+indirect)
-  rownames(eff) <- c(rownames(path),colnames(path))
+  rownames(eff) <- c(rownames(fit$path_model),colnames(fit$path_model))
   colnames(eff) <- c("direct","indirect","total")
   return(eff)
 }
