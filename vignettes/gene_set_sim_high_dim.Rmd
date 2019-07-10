@@ -1,0 +1,247 @@
+---
+title: "High Dimensional Causal Effects"
+author: "James Long"
+date: "10/29/2018"
+output: html_document
+header-includes:
+  - \usepackage{color}
+---
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: center;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.kable.NA = '')
+options(scipen = 999)
+library(graph)
+library(kableExtra)
+devtools::load_all("../mediateR/")
+set.seed(28092018)
+```
+\newcommand{\Var}{\text{Var}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\argmin}[1]{\underset{#1}{\operatorname{argmin}}\text{ }}
+\newcommand{\argmax}[1]{\underset{#1}{\operatorname{argmax}}}
+\newcommand{\ind}[1]{\mathbf{1}_{#1}}
+\newcommand{\todo}[1]{\color{red}{\text{TODO: #1}}}
+
+
+## Simulation 1: Highish Dimensional, Linear
+
+```{r simulation_params_high,echo=FALSE,eval=TRUE}
+n <- 1000
+nxx <- 5
+nmm <- 100
+sim_params <- QuickSim(n,nxx,nmm,"gaussian")
+dat <- SimulateData(sim_params)
+```
+
+We simulate `r n` observations from `r nxx` SNPs and `r nmm` gene sets.
+
+The **relevant subgraph** is the set of SNPs and gene sets which are connected to $y$ either directly or through gene sets (in the case of SNPs). To keep the number of nodes and connections reasonable, we only plot the relevant subgraph.
+
+The path structure and direct effects for SNP1,SNP2,SNP3,gs1,and gs2 are fixed. For SNPs 4 and up and gs 3 and up, SNPs are connected to each gene sets with probability $0.1$ and the path coefficients are randomly either -1/2 or 1/2.
+
+The Elastic net ($L_1$ + $L_2$ penalty) to estimate parameters with cross validation used to select tuning parameters.
+
+
+The true and estimated relevant subgraphs are:
+
+```{r plot_make,echo=FALSE,eval=TRUE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+```
+
+```{r compute_estimate,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,reg=TRUE)
+eff_est <- ComputeEffectsLinear(fit)
+```
+
+```{r plot_subgraph,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+fit_sub <- fit
+path_sub <- FindSubgraph(fit_sub)
+fit_sub$path_model <- path_sub
+fit_sub$xx_direct <- fit_sub$xx_direct[rownames(fit_sub$path_model)]
+fit_sub$mm_direct <- fit_sub$mm_direct[colnames(fit_sub$path_model)]
+
+gR2 <- MakeGraphNELObject(fit_sub$path_model,fit_sub$xx_direct,fit_sub$mm_direct)
+attrs2 <- list()
+attrs2$edge <- list()
+attrs2$edge$fontsize <- 12
+edgeAttrs2 <- MakeedgeAttrs(fit_sub$path_model,fit_sub$xx_direct,fit_sub$mm_direct)
+par(mfcol=c(1,2))
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Relevant Subgraph")
+plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Relevant Subgraph")
+```
+
+
+```{r merge_true_est,echo=FALSE,eval=TRUE}
+eff <- ComputeEffectsLinear(sim_params)
+eff_comb <- matrix(0,nrow(eff),ncol=2*ncol(eff))
+for(ii in 1:ncol(eff)){
+  eff_comb[,2*ii-1] <- eff_est[,ii]
+  eff_comb[,2*ii] <- eff[,ii]
+}
+for(ii in (ncol(dat$xx)+1):(ncol(dat$xx)+ncol(dat$mm))){
+  eff_comb[ii,3:ncol(eff_comb)] <- NA
+}
+colnames(eff_comb) <- rep(c("est","true"),ncol(eff))
+rownames(eff_comb) <- rownames(eff)
+eff_comb <- FindInterestingEffs(eff_comb)
+```
+
+
+
+
+
+<div class = "row">
+<div class="column-left">
+```{r kable_table,echo=FALSE}
+kable(eff_comb,digits=3) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  add_header_above(c(" ", "direct" = 2, "indirect" = 2, "total" = 2))
+```
+</div>
+<div class="column-right">
+</div>
+</div>
+
+
+
+
+
+## Simulation 2: Highish Dimensional, Logistic Model
+
+Same setup as before but with a logistic model linking y and the snps and gene sets.
+
+```{r simulation_params2,echo=FALSE,eval=TRUE}
+sim_params$family <- "binomial"
+dat <- SimulateData(sim_params)
+```
+
+```{r plot_make2,echo=FALSE,eval=TRUE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+```
+
+```{r compute_estimate2,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,reg=TRUE)
+```
+
+```{r plot_subgraph2,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+path_sub <- FindSubgraph(fit)
+fit_plot <- fit
+fit_plot$path_model <- path_sub
+fit_plot$xx_direct <- fit_plot$xx_direct[rownames(fit_plot$path_model)]
+fit_plot$mm_direct <- fit_plot$mm_direct[colnames(fit_plot$path_model)]
+
+gR2 <- MakeGraphNELObject(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+attrs2 <- list()
+attrs2$edge <- list()
+attrs2$edge$fontsize <- 12
+edgeAttrs2 <- MakeedgeAttrs(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+par(mfcol=c(1,2))
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Subgraph")
+plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Subgraph")
+```
+
+
+
+
+
+## Simulation 3: Highish Dimensional, Cox Model
+
+
+
+```{r simulation_params3,echo=FALSE,eval=TRUE}
+sim_params$family <- "cox"
+dat <- SimulateData(sim_params)
+rmean <- max(as.matrix(dat$y)[,1])
+```
+
+Same setup as before but with a logistic model linking y and the snps and gene sets. We compute the effects on mean survival restricted to `r round(rmean)`.
+
+```{r plot_make3,echo=FALSE,eval=TRUE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+```
+
+```{r compute_estimate3,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,reg=TRUE)
+```
+
+```{r plot_subgraph3,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+path_sub <- FindSubgraph(fit)
+fit_plot <- fit
+fit_plot$path_model <- path_sub
+fit_plot$xx_direct <- fit_plot$xx_direct[rownames(fit_plot$path_model)]
+fit_plot$mm_direct <- fit_plot$mm_direct[colnames(fit_plot$path_model)]
+
+gR2 <- MakeGraphNELObject(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+attrs2 <- list()
+attrs2$edge <- list()
+attrs2$edge$fontsize <- 12
+edgeAttrs2 <- MakeedgeAttrs(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+par(mfcol=c(1,2))
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Subgraph")
+plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Subgraph")
+```
+
+
+
+```{r xx_effects_decomp3, echo=FALSE,eval=TRUE}
+direct <- ComputeEffectxx(dat,fit,"direct",rmean=rmean)
+indirect <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+total <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+out <- cbind(direct,indirect,total)
+rownames(out) <- names(fit$xx_direct)
+colnames(out) <- c("direct","indirect","total")
+## only output xxs with either direct or indirect effects
+## no direct effect
+no_direct <- fit$xx_direct==0
+## no indirect effect if not connected to any mm which connects to y
+no_indirect <- rowSums(t(t(fit$path_model) * fit$mm_direct))==0
+out <- out[!(no_direct & no_indirect),]
+```
+
+
+
+<div class = "row">
+<div class="column-left">
+```{r kable_table2,echo=FALSE}
+kable(out,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+</div>
+<div class="column-right">
+</div>
+</div>

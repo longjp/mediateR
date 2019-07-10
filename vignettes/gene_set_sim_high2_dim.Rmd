@@ -1,0 +1,167 @@
+---
+title: "High Dimensional Causal Effects"
+author: "James Long"
+date: "10/29/2018"
+output: html_document
+header-includes:
+  - \usepackage{color}
+---
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: center;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.kable.NA = '')
+options(scipen = 999)
+library(graph)
+library(gridExtra)
+library(kableExtra)
+library(ggplot2)
+devtools::load_all("../mediateR/")
+set.seed(28092018)
+```
+\newcommand{\Var}{\text{Var}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\argmin}[1]{\underset{#1}{\operatorname{argmin}}\text{ }}
+\newcommand{\argmax}[1]{\underset{#1}{\operatorname{argmax}}}
+\newcommand{\ind}[1]{\mathbf{1}_{#1}}
+\newcommand{\todo}[1]{\color{red}{\text{TODO: #1}}}
+
+
+
+## Simulation
+
+```{r simulation_params2,echo=FALSE,eval=TRUE}
+n <- 5000
+nxx <- 100
+nmm <- 10
+maf <- 0.25
+sim_params <- QuickSim2(n,nxx,nmm,"binomial",xx_prob=maf)
+dat <- SimulateData(sim_params)
+```
+
+We simulate `r n` observations from `r nxx` SNPs and `r nmm` gene sets from a logistic response model. All SNPs are independent bernoulli with minor allele frequency of `r maf`. The true and estimated relevant subgraphs are:
+
+
+```{r plot_make2,echo=FALSE,eval=TRUE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+```
+
+```{r compute_estimate2,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,reg=TRUE)
+```
+
+```{r plot_subgraph2,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+
+path_sub <- FindSubgraph(fit)
+fit_plot <- fit
+fit_plot$path_model <- path_sub
+fit_plot$xx_direct <- fit_plot$xx_direct[rownames(fit_plot$path_model)]
+fit_plot$mm_direct <- fit_plot$mm_direct[colnames(fit_plot$path_model)]
+
+gR2 <- MakeGraphNELObject(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+attrs2 <- list()
+attrs2$edge <- list()
+attrs2$edge$fontsize <- 12
+edgeAttrs2 <- MakeedgeAttrs(fit_plot$path_model,fit_plot$xx_direct,fit_plot$mm_direct)
+par(mfcol=c(1,2))
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Subgraph")
+plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Subgraph")
+```
+
+
+Only gene set 1 has an affect on the outcome.
+
+```{r eda2,echo=FALSE,eval=TRUE,fig.width=10,fig.height=4}
+ymm <- data.frame(y=as.factor(dat$y),mm=dat$mm)
+colnames(ymm) <- c("y",colnames(dat$mm))
+p1 <- ggplot(ymm, aes(gs1, fill = y, colour = y)) + geom_density(alpha = 0.1)
+p2 <- ggplot(ymm, aes(gs2, fill = y, colour = y)) + geom_density(alpha = 0.1)
+grid.arrange(p1,p2,nrow=1)
+```
+
+The proportion of $y=1$ is `r mean(dat$y)`.
+
+```{r cont_table_xx1,echo=FALSE,eval=TRUE}
+ta <- table(dat$y,dat$xx[,1])
+rownames(ta) <- paste0("y=",rownames(ta))
+ta <- ta/rowSums(ta)
+kable(ta,digits=2) %>%
+  add_header_above(c(" ","SNP1"=2)) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+```{r cont_table_xx2,echo=FALSE,eval=TRUE}
+ta <- table(dat$y,dat$xx[,2])
+rownames(ta) <- paste0("y=",rownames(ta))
+ta <- ta/rowSums(ta)
+kable(ta,digits=2) %>%
+  add_header_above(c(" ","SNP2"=2)) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+```{r cont_table_xx11,echo=FALSE,eval=TRUE}
+ta <- table(dat$y,dat$xx[,11])
+rownames(ta) <- paste0("y=",rownames(ta))
+ta <- ta/rowSums(ta)
+kable(ta,digits=2) %>%
+  add_header_above(c(" ","SNP11"=2)) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+```{r cont_table_xx25,echo=FALSE,eval=TRUE}
+ta <- table(dat$y,dat$xx[,25])
+rownames(ta) <- paste0("y=",rownames(ta))
+ta <- ta/rowSums(ta)
+kable(ta,digits=2) %>%
+  add_header_above(c(" ","SNP25"=2)) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+
+```{r xx_effects_decomp2, echo=FALSE,eval=TRUE}
+direct <- ComputeEffectxx(dat,fit,"direct")
+indirect <- ComputeEffectxx(dat,fit,"indirect")
+total <- ComputeEffectxx(dat,fit,"total")
+out <- cbind(direct,indirect,total)
+rownames(out) <- names(fit$xx_direct)
+colnames(out) <- c("direct","indirect","total")
+## only output xxs with either direct or indirect effects
+## no direct effect
+no_direct <- fit$xx_direct==0
+## no indirect effect if not connected to any mm which connects to y
+no_indirect <- rowSums(t(t(fit$path_model) * fit$mm_direct))==0
+out <- out[!(no_direct & no_indirect),]
+```
+
+
+<div class = "row">
+<div class="column-left">
+```{r kable_table2,echo=FALSE,eval=TRUE}
+kable(out,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+</div>
+<div class="column-right">
+</div>
+</div>

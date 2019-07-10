@@ -1,0 +1,275 @@
+---
+title: "Multiple Mediator Simulation"
+author: "James Long"
+date: "4/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(01042019)
+devtools::load_all("../mediateR/")
+library(kableExtra)
+library(graph)
+```
+
+
+## Setup
+
+
+```{r constants_effect_sizes,echo=FALSE,include=FALSE}
+family <- "cox"
+var_mm <- 1
+xx_direct <- 0.5
+xx_prob <- 0.2
+R2 <- xx_prob*(1-xx_prob) / (xx_prob*(1-xx_prob)  + var_mm)
+```
+
+We simulate two settings representing large and small indirect effects. Our goal is to estimate
+
+$$
+\text{IER } = \frac{\text{Indirect Effect}}{\text{Total Effect}}
+$$
+
+i.e. the fraction of the SNP effect which is caused by the gene mediators. Effect sizes are measured on the restricted mean survival time scale. Simulation parameters are chosen to roughly appoximate TCGA KIRC data.
+
+Simulation parameters shared across both large and small indirect effect settings:
+
+* 1 SNP, prevalence `r xx_prob`
+* 5 - 20 mediators
+* $R^2=$ `r round(R2,2)` for SNP-mediator relation for first 5 mediators. Other mediators independent of SNP (i.e. 5 true mediators).
+* SNP direct cofficient `r xx_direct` in Cox PH model
+
+```{r constants_speed,echo=FALSE,include=FALSE}
+## constants, alter for speed
+n_true <- 10000 ## sample size for approximating true ratio
+N <- 100 ## number of simulation runs
+nsi <- c(100,500,2000) ## sample sizes for simulation
+nmmi <- c(5,10,20) ## number of mediators for simulation
+B <- 5 ## number of bootstrap samples for ci
+```
+
+
+### Large Indirect Effect
+
+
+
+
+```{r indirect_params,echo=FALSE,include=FALSE}
+## determine true ratio
+mm_direct <- 0.5
+sim_params <- QuickSimMultipleMediator(n=n_true,nmm=5,var_mm=var_mm,
+                                       xx_direct=xx_direct,mm_direct=mm_direct,
+                                       xx_prob=xx_prob,family)
+##dat <- SimulateData(sim_params)
+dat <- SimulateData(sim_params)
+rmean <- max(as.matrix(dat$y)[,1])
+fit <- ComputePath(dat)
+direct_t <- ComputeEffectxx(dat,fit,"direct",rmean=rmean)
+indirect_t <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+total_t <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+true_ratio <- indirect_t / total_t
+true_ratio
+
+
+n_true <- 50
+sim_params <- QuickSimMultipleMediator(n=n_true,nmm=5,var_mm=var_mm,
+                                       xx_direct=xx_direct,mm_direct=mm_direct,
+                                       xx_prob=xx_prob,family)
+rmean <- 2000
+dat <- SimulateData(sim_params)
+fit <- ComputePath(dat)
+fit$mm_direct
+fit$xx_direct
+
+fit$directfit
+
+indirect_t <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+total_t <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+true_ratio <- indirect_t / total_t
+true_ratio
+
+```
+
+Mediator-outcome coefficients for the first 5 mediators are all `r mm_direct`.
+
+```{r make_graph_large,echo=FALSE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="Relevant Subgraph")
+```
+
+We compute
+
+* **Est IER** Median of IER estimates across simulation runs
+* **Percent Bias** (Est IER - True IER) / (True IER)
+* **90% CI coverage probability:** Proportion of simulation runs in which 90% bootstrap CI covers truth
+* **Power:** $H_0: IER \leq 0$, $H_a: IER > 0$ based on $\alpha=0.05$ level test
+
+for various $n$ and number of mediators based on `r N` simulations. Only the first 5 mediators have non-zero mediator-outcome coefficient.
+
+```{r indirect,echo=FALSE,include=FALSE}
+## set up results matrix
+ns <- rep(nsi,each=length(nmmi))
+nmm <- rep(nmmi,length(nsi))
+cnames <- c("n","n_med","in/tot","in/tot_est","percent_bias","90_cov_prob","Power",
+            "in","in_est")
+results <- matrix(0,nrow=length(nmm),ncol=length(cnames))
+colnames(results) <- cnames
+results[,1] <- ns
+results[,2] <- nmm
+results[,3] <- round(true_ratio,3)
+results[,8] <- round(indirect_t,3)
+## fill results matrix with results
+for(ii in 1:nrow(results)){
+  print(ii)
+  sim_params <- QuickSimMultipleMediator(n=results[ii,1],nmm=results[ii,2],var_mm=var_mm,
+                                         xx_direct=xx_direct,mm_direct=mm_direct,
+                                         xx_prob=xx_prob,family)
+  ratio_temp <- rep(0,N)
+  in_temp <- rep(pi,N)
+  ratio_boot <- matrix(0,nrow=N,ncol=B)
+  for(kk in 1:N){
+      dat <- SimulateData(sim_params)
+      fit <- ComputePath(dat)
+      indirect <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+      total <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+      ratio_temp[kk] <- indirect / total
+      in_temp[kk] <- indirect
+      for(jj in 1:B){
+        ix <- sample(1:sim_params$n,replace=TRUE)
+        dat_boot <- SubsetDat(dat,ix)
+        fit_boot <- ComputePath(dat_boot)
+        indirect <- ComputeEffectxx(dat_boot,fit_boot,"indirect",rmean=rmean)
+        total <- ComputeEffectxx(dat_boot,fit_boot,"total",rmean=rmean)
+        ratio_boot[kk,jj] <- indirect / total
+      }
+  }
+  ## when indirect = total = 0, ratio_boot is NA
+  ## replace this with 0, i.e. 0/0 = (by def) 0
+  ratio_boot[is.na(ratio_boot)] <- 0
+  results[ii,4] <- round(median(ratio_temp),4)
+  results[ii,5] <- round(100*(results[ii,4] - results[ii,3])/results[ii,3],2)
+  results[ii,ncol(results)] <- round(median(in_temp),2)
+  lb <- apply(ratio_boot,1,function(x){quantile(x,.05)})
+  ub <- apply(ratio_boot,1,function(x){quantile(x,.95)})
+  zstat <- apply(ratio_boot,1,function(x){quantile(x,.05)})
+  results[ii,6] <- round(100*mean(results[ii,3] > lb & results[ii,3] < ub),2)
+  results[ii,7] <- round(100*mean(zstat > 0),2)
+}
+results
+```
+
+
+
+
+```{r out,echo=FALSE}
+kable(results,
+      col.names=c("n","No. Mediators","True IER","Est. IER","Percent Bias","90% CI Cov.","Power","True IE","Est. IE"),align='c') %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+
+### Small Indirect Effect
+
+
+
+```{r indirect_params2,echo=FALSE,include=FALSE,eval=FALSE}
+## determine true ratio
+mm_direct <- 0.05
+sim_params <- QuickSimMultipleMediator(n=n_true,nmm=5,var_mm=var_mm,
+                                       xx_direct=xx_direct,mm_direct=mm_direct,
+                                       xx_prob=xx_prob,family)
+dat <- SimulateData(sim_params)
+rmean <- max(as.matrix(dat$y)[,1])
+dat <- SimulateData(sim_params)
+fit <- ComputePath(dat)
+direct_t <- ComputeEffectxx(dat,fit,"direct",rmean=rmean)
+indirect_t <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+total_t <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+true_ratio <- indirect_t / total_t
+```
+
+Same setup as before but mediator-outcome coefficients for the first 5 mediators are all now **`r mm_direct`**.
+
+```{r make_graph_large2,echo=FALSE,eval=FALSE}
+path_sub <- FindSubgraph(sim_params)
+gR <- MakeGraphNELObject(FindSubgraph(sim_params),
+                         sim_params$xx_direct[rownames(sim_params$path) %in% rownames(path_sub)],
+                         sim_params$mm_direct[colnames(sim_params$path) %in% colnames(path_sub)])
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,sim_params$mm_direct)
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="Relevant Subgraph")
+```
+
+```{r indirect2,echo=FALSE,include=FALSE,eval=FALSE}
+## set up results matrix
+ns <- rep(nsi,each=length(nmmi))
+nmm <- rep(nmmi,length(nsi))
+cnames <- c("n","n_med","in/tot","in/tot_est","percent_bias","90_cov_prob","Power")
+results <- matrix(0,nrow=length(nmm),ncol=length(cnames))
+colnames(results) <- cnames
+results[,1] <- ns
+results[,2] <- nmm
+results[,3] <- round(true_ratio,3)
+## fill results matrix with results
+for(ii in 1:nrow(results)){
+  print(ii)
+  sim_params <- QuickSimMultipleMediator(n=results[ii,1],nmm=results[ii,2],var_mm=var_mm,
+                                           xx_direct=xx_direct,mm_direct=mm_direct,
+                                           xx_prob=xx_prob,family)
+  ratio_temp <- rep(0,N)
+  ratio_boot <- matrix(0,nrow=N,ncol=B)
+  for(kk in 1:N){
+      dat <- SimulateData(sim_params)
+      fit <- ComputePath(dat)
+      ##direct <- ComputeEffectxx(dat,fit,"direct",rmean=rmean)
+      indirect <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
+      total <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
+      ratio_temp[kk] <- indirect / total
+      # if(is.na(ratio_temp[kk])){
+      #   print("error")
+      #   print(paste0("kk is: ",kk))
+      #   stop()  
+      # }
+      for(jj in 1:B){
+        ix <- sample(1:sim_params$n,replace=TRUE)
+        dat_boot <- SubsetDat(dat,ix)
+        fit_boot <- ComputePath(dat_boot)
+        indirect <- ComputeEffectxx(dat_boot,fit_boot,"indirect",rmean=rmean)
+        total <- ComputeEffectxx(dat_boot,fit_boot,"total",rmean=rmean)
+        ratio_boot[kk,jj] <- indirect / total
+        # if(is.na(ratio_boot[kk,jj])){
+        #   print("error")
+        #   print(paste0("kk is: ",kk))
+        #   print(paste0("jj is: ",jj))
+        #   stop()  
+        # }
+      }
+  }
+  results[ii,4] <- round(median(ratio_temp),2)
+  results[ii,5] <- round(100*(results[ii,4] - results[ii,3])/results[ii,3],2)
+  lb <- apply(ratio_boot,1,function(x){quantile(x,.05,na.rm=TRUE)})
+  ub <- apply(ratio_boot,1,function(x){quantile(x,.95,na.rm=TRUE)})
+  zstat <- apply(ratio_boot,1,function(x){quantile(x,.05,na.rm=TRUE)})
+  results[ii,6] <- round(100*mean(results[ii,3] > lb & results[ii,3] < ub),2)
+  results[ii,7] <- round(100*mean(zstat > 0),2)
+}
+results
+```
+
+
+```{r out2,echo=FALSE,eval=FALSE}
+kable(results,
+      col.names=c("n","No. Mediators","True IER","Est. IER","Percent Bias","90% CI Cov.","Power"),align='c') %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```

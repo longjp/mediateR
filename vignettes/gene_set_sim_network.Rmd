@@ -1,0 +1,237 @@
+---
+title: "Gene Sets with Networks"
+author: "James Long"
+date: "1/14/2019"
+output: html_document
+---
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: center;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: center;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.kable.NA = '')
+options(scipen = 999)
+library(graph)
+library(kableExtra)
+devtools::load_all("../mediateR/")
+set.seed(280920181)
+```
+\newcommand{\Var}{\text{Var}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\argmin}[1]{\underset{#1}{\operatorname{argmin}}\text{ }}
+\newcommand{\argmax}[1]{\underset{#1}{\operatorname{argmax}}}
+\newcommand{\ind}[1]{\mathbf{1}_{#1}}
+\newcommand{\todo}[1]{\color{red}{\text{TODO: #1}}}
+
+## Simulation 1: Linear, Low Dimensional
+
+
+```{r cov_mm_setup,echo=FALSE,eval=TRUE}
+path <- matrix(c(0,0,1,0),nrow=2,byrow=TRUE)
+dag <- list(path=path,var=rep(2,ncol(path)))
+```
+
+
+
+```{r simulation_params,echo=FALSE,eval=TRUE}
+n <- 500
+sim_params <- QuickSim(n,3,2,"gaussian")
+sim_params$dag <- dag
+dat <- SimulateData(sim_params)
+## need to fit all relations
+dat$path[,] <- 1
+
+## generate g's according to graph
+##dat$mm[,1] <- 0.5*dat$xx[,1] - 0.5*dat$xx[,2] + rnorm(n,mean=0,sd=sqrt(2))
+##dat$mm[,2] <- dat$mm[,1] + 0.5*dat$xx[,2] + 0.5*dat$xx[,3] + rnorm(n,mean=0,sd=sqrt(2))
+```
+
+We simulate `r n` observations from the "True Graph" using path coefficients given below.
+
+```{r plot_make,echo=FALSE,eval=TRUE}
+gR <- MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
+                         sim_params$mm_direct,dag$path)
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
+                           sim_params$mm_direct,path=dag$path)
+```
+
+
+```{r compute_estimate,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,mmr=TRUE)
+fit$cov_mm <- cov(fit$mm_resid)
+```
+
+
+```{r plot_subgraph,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Graph")
+```
+
+
+The DAG contains a path from gs1 to gs2, unlike previous simulations. To compute the direct and indirect effects we regress each gs on all SNPs (regardless of path relations) and use the regression coefficients and covariance matrix of residuals to approximate $p(g|s)$. See report.html for a description.
+
+Note that with the gs1 -> gs2 link, there are three indirect paths from SNP2 to y:
+
+* SNP2 -> gs1 -> y
+* SNP2 -> gs1 -> gs2 -> y
+* SNP2 -> gs2 -> y
+
+Summing each path indirect effect leads to a -1.5 indirect effect (this is a linear model, so the effects are easily computed from path coefficients). If there is no gs1 -> gs2 path, then the indirect effect of SNP1 is 0 because the two paths (SNP2 -> gs1 -> y and SNP2 -> gs2 -> y) cancel. This was observed in earlier simulations.
+
+
+
+
+
+```{r xx_effects_decomp, echo=FALSE,eval=TRUE}
+## compute true effects by approximating integral with large sample size
+sim_params2 <- sim_params
+sim_params2$n <- 1e6 ## use million observations to approximate effects
+dat2 <- SimulateData(sim_params2)
+dat2$path[,] <- 1
+fit2 <- ComputePath(dat2,mmr=TRUE)
+fit2$cov_mm <- cov(fit2$mm_resid)
+direct_t <- ComputeEffectxx(dat2,fit2,"direct",mmn=TRUE)
+indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",mmn=TRUE)
+total_t <- ComputeEffectxx(dat2,fit2,"total",mmn=TRUE)
+
+direct <- ComputeEffectxx(dat,fit,"direct",mmn=TRUE)
+indirect <- ComputeEffectxx(dat,fit,"indirect",mmn=TRUE)
+total <- ComputeEffectxx(dat,fit,"total",mmn=TRUE)
+eff_comb <- cbind(direct,direct_t,indirect,indirect_t,total,total_t)
+rownames(eff_comb) <- names(fit$xx_direct)
+colnames(eff_comb) <- c("est","true","est","true","est","true")
+xx1total_sample <- eff_comb[1,5]
+xx1total_true <- eff_comb[1,6]
+```
+
+```{r bootstrap,echo=FALSE,eval=TRUE}
+B <- 100
+total_xx1 <- rep(0,length=B)
+for(ii in 1:B){
+  ix <- sample(1:sim_params$n,replace=TRUE)
+  dat_boot <- SubsetDat(dat,ix)
+  fit_boot <- ComputePath(dat_boot,mmr=TRUE)
+  fit_boot$cov_mm <- cov(fit_boot$mm_resid)
+  total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
+}
+```
+
+
+<div class = "row">
+<div class="column-left">
+```{r kable_table,echo=FALSE}
+kable(eff_comb,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  add_header_above(c(" ", "direct" = 2, "indirect" = 2, "total" = 2))
+```
+</div>
+<div class="column-right">
+```{r bootstrap_plot,echo=FALSE,fig.height=4.5,fig.width=4.5}
+hist(total_xx1,main="Bootstrap Samples SNP1 Total Effect",xlab="Estimate")
+abline(v=xx1total_sample,lwd=3,col='blue')
+abline(v=xx1total_true,lwd=3,col='red')
+legend("topright",c("Point Estimate","True"),col=c("blue","red"),lwd=2)
+```
+</div>
+</div>
+
+
+
+
+## Simulation 2: Logistic, Low Dimensional
+
+Same as simulation 1 but with binomial link function connecting y with snps and gene sets.
+
+
+```{r simulation_params2,echo=FALSE,eval=TRUE}
+sim_params$family <- "binomial"
+dat <- SimulateData(sim_params)
+dat$path[,] <- 1
+```
+
+```{r plot_make2,echo=FALSE,eval=TRUE}
+gR <- MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
+                         sim_params$mm_direct,dag$path)
+attrs <- list()
+attrs$edge <- list()
+attrs$edge$fontsize <- 12
+edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
+                           sim_params$mm_direct,path=dag$path)
+```
+
+```{r compute_estimate2,echo=FALSE,eval=TRUE}
+fit <- ComputePath(dat,mmr=TRUE)
+fit$cov_mm <- cov(fit$mm_resid)
+```
+
+```{r plot_subgraph2,echo=FALSE,eval=TRUE,fig.height=6,fig.width=12}
+plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Graph")
+```
+
+```{r xx_effects_decomp2, echo=FALSE,eval=TRUE}
+## compute true effects by approximating integral with large sample size
+sim_params2 <- sim_params
+sim_params2$n <- 1e6 ## use million observations to approximate effects
+dat2 <- SimulateData(sim_params2)
+dat2$path[,] <- 1
+fit2 <- ComputePath(dat2,mmr=TRUE)
+fit2$cov_mm <- cov(fit2$mm_resid)
+direct_t <- ComputeEffectxx(dat2,fit2,"direct",mmn=TRUE)
+indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",mmn=TRUE)
+total_t <- ComputeEffectxx(dat2,fit2,"total",mmn=TRUE)
+
+direct <- ComputeEffectxx(dat,fit,"direct",mmn=TRUE)
+indirect <- ComputeEffectxx(dat,fit,"indirect",mmn=TRUE)
+total <- ComputeEffectxx(dat,fit,"total",mmn=TRUE)
+eff_comb <- cbind(direct,direct_t,indirect,indirect_t,total,total_t)
+rownames(eff_comb) <- names(fit$xx_direct)
+colnames(eff_comb) <- c("est","true","est","true","est","true")
+xx1total_sample <- eff_comb[1,5]
+xx1total_true <- eff_comb[1,6]
+```
+
+```{r bootstrap2,echo=FALSE,eval=TRUE}
+B <- 100
+total_xx1 <- rep(0,length=B)
+for(ii in 1:B){
+  ix <- sample(1:sim_params$n,replace=TRUE)
+  dat_boot <- SubsetDat(dat,ix)
+  fit_boot <- ComputePath(dat_boot,mmr=TRUE)
+  fit_boot$cov_mm <- cov(fit_boot$mm_resid)
+  total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
+}
+```
+
+
+<div class = "row">
+<div class="column-left">
+```{r kable_table2,echo=FALSE}
+kable(eff_comb,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  add_header_above(c(" ", "direct" = 2, "indirect" = 2, "total" = 2))
+```
+</div>
+<div class="column-right">
+```{r bootstrap_plot2,echo=FALSE,fig.height=4.5,fig.width=4.5}
+hist(total_xx1,main="Bootstrap Samples SNP1 Total Effect",xlab="Estimate")
+abline(v=xx1total_sample,lwd=3,col='blue')
+abline(v=xx1total_true,lwd=3,col='red')
+legend("topright",c("Point Estimate","True"),col=c("blue","red"),lwd=2)
+```
+</div>
+</div>
+
+
