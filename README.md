@@ -2,13 +2,10 @@
 
 Fit mediation models to assess the causal impact of **x** on **y** mediated through **m**. Implements models and algorithms described in Long et al. 2019+.
   
-  ![alt text](man/figs/dag_complex2.pdf "Causal DAG")
-  ![alt text](man/figs/sdss_folded.png "Causal DAG")
+  ![alt text](man/figs/dag_complex2.png "Causal DAG")
   
   
-    ![alt text](man/figs/dag_complex2.pdf "Causal DAG")
-
-<img src="man/figs/dag_complex2.pdf" align="right" width="120" />
+<img src="man/figs/dag_complex2.png" align="right" width="120" />
 
 ## Installation
 
