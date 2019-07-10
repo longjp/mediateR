@@ -7,10 +7,9 @@ Fit mediation models to assess the causal impact of **x** on **y** mediated thro
 
 ### Installation
 
-Using `devtools` in R
+Install from github using R `devtools`
 
 ``` r
-# install from github
 devtools::install_github("longjp/mediateR")
 ```
 
