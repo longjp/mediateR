@@ -1,13 +1,33 @@
-#### functions for simulating data
-
 #' Generate simulation data.
 #'
 #' \code{SimulateData} creates simulation data set using specified
-#'   input parameters. Output \code{dat} is argument for fitting
-#'   path coefficients and direct and indirect effects.
+#' input parameters. Output list is \code{dat} argument for fitting
+#' path coefficients and direct and indirect effects.
+#'
+#' Output list used as \code{dat} argument for \code{ComputePath}
+#' and \code{ComputEffectxx}. Has named elements:
+#'
+#' \itemize{
+#'
+#'  \item    \code{y} :   response vector of length n, either double or Surv object
+#'
+#'  \item     \code{mm} :   n x q mediator matrix
+#'
+#'  \item    \code{xx} :   n x p treamtment matrix
+#'
+#'  \item     \code{co} :   n x r matrix of confounders
+#'
+#'  \item   \code{path} :   p x q matrix of 0s and 1s denoting paths to be fit.
+#'                        path[i,j]=0 indicates a priori
+#'                        knowledge of no path xx[i] and mm[j]
+#'
+#'  \item \code{family} : 'gaussian', 'binomial', or 'cox' indicating
+#'                        whether a linear, logistic, or cox model
+#'                        should be fit with the y on xx,mm,co regression
+#'  }
 #'
 #' @param params Simulation parameters (see SimpleSim for format)
-#' @return List \code{dat} of simulation data.
+#' @return List containing simulation data.
 #' @examples
 #' set.seed(1234)
 #' params <- SimpleSim()
