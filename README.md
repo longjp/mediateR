@@ -1,10 +1,10 @@
 ## Multiple Mediation Analysis with Nonlinear Models
 
-Fit mediation models to assess the causal impact of $x$ on $y$ mediated through $m$. 
+Fit mediation models to assess the causal impact of *x* on *y* mediated through *m*. 
   
   ![alt text](man/figs/dag_complex2.pdf "Causal DAG")
 
-# ggplot2 <img src="man/figs/dag_complex2.pdf" align="right" width="120" />
+<img src="man/figs/dag_complex2.pdf" align="right" width="120" />
 
 ## Installation
 
@@ -25,10 +25,6 @@ R CMD INSTALL mediateR
 
 See `vignettes\`
 
-## Citation
+## Citation and Contact
 
-This code was developed for and described in Long et al. 2019+. Please cite this work if you use the templates for any publications.
-
-## Contact
-
-Email (jplong@mdanderson.org) with questions or bug reports.
+This code was developed for and described in Long et al. 2019+. Please cite this work if you use the templates for any publications. Email (jplong@mdanderson.org) with questions or bug reports.
