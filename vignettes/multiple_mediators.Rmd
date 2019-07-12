@@ -1,8 +1,9 @@
 ---
 title: "Multiple Mediators"
-output: rmarkdown::html_vignette
+author: James P. Long
+output: pdf_document
 vignette: >
-  %\VignetteIndexEntry{intro}
+  %\VignetteIndexEntry{Multiple Mediators}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

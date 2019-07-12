@@ -10,6 +10,10 @@ Fit mediation models to assess the causal impact of **x** on **y** mediated thro
 Install from github using R `devtools`
 
 ``` r
+## easy access to vignettes, takes longer and requires suggests packages
+devtools::install_github("longjp/mediateR", build_opts = c("--no-resave-data", "--no-manual"))
+
+## faster, no vignettes
 devtools::install_github("longjp/mediateR")
 ```
 
@@ -19,9 +23,16 @@ or in a terminal
 git clone https://github.com/longjp/mediateR.git
 R CMD INSTALL mediateR
 ```
+
 ### Examples
 
-See `vignettes\`
+If `devtools::install_github` with `build_opts` was used, you can access vignettes with
+
+``` r
+browseVignettes("mediateR")
+```
+
+Otherwise download the `.html` files in the `\vignettes` folder, view in a browser.
 
 ### Citation and Contact
 
