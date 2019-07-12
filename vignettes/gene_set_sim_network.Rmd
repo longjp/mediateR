@@ -24,7 +24,8 @@ options(knitr.kable.NA = '')
 options(scipen = 999)
 library(graph)
 library(kableExtra)
-devtools::load_all("../mediateR/")
+library(Rgraphviz)
+library(mediateR)
 set.seed(280920181)
 ```
 \newcommand{\Var}{\text{Var}}
@@ -46,7 +47,7 @@ dag <- list(path=path,var=rep(2,ncol(path)))
 
 ```{r simulation_params,echo=FALSE,eval=TRUE}
 n <- 500
-sim_params <- QuickSim(n,3,2,"gaussian")
+sim_params <- mediateR:::QuickSim(n,3,2,"gaussian")
 sim_params$dag <- dag
 dat <- SimulateData(sim_params)
 ## need to fit all relations
@@ -60,12 +61,12 @@ dat$path[,] <- 1
 We simulate `r n` observations from the "True Graph" using path coefficients given below.
 
 ```{r plot_make,echo=FALSE,eval=TRUE}
-gR <- MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
+gR <- mediateR:::MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
                          sim_params$mm_direct,dag$path)
 attrs <- list()
 attrs$edge <- list()
 attrs$edge$fontsize <- 12
-edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
+edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
                            sim_params$mm_direct,path=dag$path)
 ```
 
@@ -122,7 +123,7 @@ B <- 100
 total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
-  dat_boot <- SubsetDat(dat,ix)
+  dat_boot <- mediateR:::SubsetDat(dat,ix)
   fit_boot <- ComputePath(dat_boot,mmr=TRUE)
   fit_boot$cov_mm <- cov(fit_boot$mm_resid)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
@@ -163,12 +164,12 @@ dat$path[,] <- 1
 ```
 
 ```{r plot_make2,echo=FALSE,eval=TRUE}
-gR <- MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
+gR <- mediateR:::MakeGraphNELObject(sim_params$path,sim_params$xx_direct,
                          sim_params$mm_direct,dag$path)
 attrs <- list()
 attrs$edge <- list()
 attrs$edge$fontsize <- 12
-edgeAttrs <- MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
+edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct,
                            sim_params$mm_direct,path=dag$path)
 ```
 
@@ -208,7 +209,7 @@ B <- 100
 total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
-  dat_boot <- SubsetDat(dat,ix)
+  dat_boot <- mediateR:::SubsetDat(dat,ix)
   fit_boot <- ComputePath(dat_boot,mmr=TRUE)
   fit_boot$cov_mm <- cov(fit_boot$mm_resid)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
