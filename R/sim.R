@@ -103,8 +103,8 @@ SimulateData <- function(params){
 #' names(params)
 #' @export
 SimpleSim <- function(n=500,family="gaussian"){
-  xxnames <- "xx"
-  mmnames <- "mm"
+  xxnames <- "x"
+  mmnames <- "m"
   xx_direct <- 2
   names(xx_direct) <- xxnames
   mm_direct <- 3
@@ -145,7 +145,7 @@ SimpleSim <- function(n=500,family="gaussian"){
 # nxx = number of xxs
 # nmm = number of gene sets
 # family = "gaussian" or "binomial" or "cox"
-QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5){
+QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5,const_direct=0){
   if(nmm < 2){
     stop("nmm (number of gene sets) must be at least 2")
   }
@@ -153,8 +153,8 @@ QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5){
     stop("nxx (number of xxs) must be at least 3")
   }
   path <- matrix(rbinom(nxx*nmm,size=1,prob=.1),nrow=nxx,ncol=nmm)
-  xxnames <- paste0("SNP",1:nrow(path))
-  mmnames <- paste0("gs",1:ncol(path))
+  xxnames <- paste0("x",1:nrow(path))
+  mmnames <- paste0("m",1:ncol(path))
   rownames(path) <- xxnames
   colnames(path) <- mmnames
   path[1,1] <- 1
@@ -189,7 +189,6 @@ QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5){
   names(mm_direct) <- mmnames
   ## constant parameters
   const_mm <- rep(0,ncol(path))
-  const_direct <- 0
   ## mm variance
   var_mm <- rep(1,ncol(path))
   sim_params <- list(n=n,path=path,path_model=path_model,
@@ -217,8 +216,8 @@ QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
   }
   ##path <- matrix(rbinom(nxx*nmm,size=1,prob=.2),nrow=nxx,ncol=nmm)
   path <- matrix(1,nrow=nxx,ncol=nmm)
-  xxnames <- paste0("SNP",1:nrow(path))
-  mmnames <- paste0("gs",1:ncol(path))
+  xxnames <- paste0("x",1:nrow(path))
+  mmnames <- paste0("m",1:ncol(path))
   rownames(path) <- xxnames
   colnames(path) <- mmnames
   # path[1:10,1] <- 1
@@ -274,8 +273,8 @@ QuickSimMultipleMediator <- function(n,nmm,family,
     stop(paste0("nmm (number of mediators) must be at least ",nmm_min))
   }
   path <- matrix(1,ncol=nmm,nrow=1)
-  xxnames <- paste0("SNP",1:nrow(path))
-  mmnames <- paste0("gs",1:ncol(path))
+  xxnames <- paste0("x",1:nrow(path))
+  mmnames <- paste0("m",1:ncol(path))
   rownames(path) <- xxnames
   colnames(path) <- mmnames
   ## coefficients linking xx with mm
@@ -306,14 +305,14 @@ QuickSimMultipleMediator <- function(n,nmm,family,
 }
 
 ## returns simulation parameters
-## SNP1 and gs: both have direct causes
+## xx1 and mm: both have direct causes
 # n = sample size
 #
 # family = "gaussian" or "binomial" or "cox"
 OneDSim <- function(n,n_xx_noise=0,n_mm_noise=0,n_co=1,family="gaussian"){
   path <- matrix(0,nrow=1+n_xx_noise,ncol=1+n_mm_noise)
-  xxnames <- paste0("SNP",1:nrow(path))
-  mmnames <- paste0("gs",1:ncol(path))
+  xxnames <- paste0("x",1:nrow(path))
+  mmnames <- paste0("m",1:ncol(path))
   rownames(path) <- xxnames
   colnames(path) <- mmnames
   path[1,1] <- 1
