@@ -10,7 +10,7 @@ SimulateData(params)
 \item{params}{Simulation parameters (see SimpleSim for format)}
 }
 \value{
-List \code{dat} of simulation data.
+List containing simulation data.
 }
 \description{
 \code{SimulateData} creates simulation data set using specified
