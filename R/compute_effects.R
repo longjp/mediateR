@@ -274,6 +274,36 @@ ComputeBaselineSurvival <- function(y,preds0){
 ##
 ##      value
 ##        vector with all xx effects
+
+#' Computes direct, indirect, or total effects of xx
+#'
+#' \code{ComputeEffectxx} computes either direct, indirect, or total effect
+#' of each xx variable on response y when transition x from xp to xpp.
+#'
+#' @param dat List containing data (see SimulateData for format)
+#' @param fit List with path coefficients.
+#' @param effect Either 'direct', 'indirect', or 'total'
+#' @param xp The initial value of x.
+#' @param xpp The new value of x.
+#' @param risk_scale Either 'diff' (for risk difference) or 'ratio' (for odds).
+#'  see details for more information.
+#' @param mmn Should gene set network be simulated. If FALSE assume
+#'   conditionally independent mediators.
+#' @return Vector of effects.
+#' @examples
+#' params <- SimpleSim()
+#' dat <- SimulateData(params)
+#' fit <- ComputePath(dat)
+#' d <- ComputeEffectxx(dat,fit,"direct")
+#' i <- ComputeEffectxx(dat,fit,"indirect")
+#' to <- ComputeEffectxx(dat,fit,"total")
+#' ## effects computed by estimating integrals
+#' print(c(d,i,to))
+#' ## effects using model linearity assumption
+#' ComputeEffectsLinear(fit) ## based on sample
+#' ## exact effects using simulation coefficients
+#' ComputeEffectsLinear(params) ## exact
+#' @export
 ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,rmean=NULL){
   if(dat$family=="cox" & is.null(rmean)){
     stop("In ComputeEffectxx, rmean must be non NULL for dat$family=cox")
@@ -288,6 +318,9 @@ ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,
     if(dat$family=="binomial"){
       risk_scale <- "ratio"
     }
+  }
+  if(risk_scale=="ratio" & dat$family=="gaussian"){
+    stop("Effect risk scale is ratio but model is gaussian linear. Incompatible.")
   }
   if(is.null(dat$co)){
     dat$co <- matrix(0,nrow=nrow(dat$xx),ncol=0)
