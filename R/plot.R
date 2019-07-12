@@ -38,7 +38,7 @@ MakeGraphNELObject <- function(path,xx_direct,mm_direct,mm_path=NULL){
       edL[[ii]] <- list(edges=c(),weights=c())
     }
     if(length(which(mm_path[,jj]!=0))!=0){
-      edL[[ii]]$edges <- c(edL[[ii]]$edges,which(path[,jj]!=0) + nrow(path) + 1)
+      edL[[ii]]$edges <- c(edL[[ii]]$edges,which(mm_path[,jj]!=0) + nrow(path) + 1)
       edL[[ii]]$weights <- rep(1,length(edL[[ii]]$edges))
     }
   }
