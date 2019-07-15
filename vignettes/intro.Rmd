@@ -1,6 +1,10 @@
 ---
-title: "intro"
-output: rmarkdown::html_vignette
+title: "Introduction to `mediateR`"
+output: 
+  rmarkdown::html_vignette:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{intro}
   %\VignetteEngine{knitr::rmarkdown}
@@ -15,5 +19,69 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+set.seed(1234)
 library(mediateR)
 ```
+
+
+# Data Structure
+
+The code contains functions to simulate data for mediation analysis.
+
+```{r simulate}
+params <- SimpleSim(n=10,family="gaussian")
+dat <- SimulateData(params)
+dat
+```
+
+
+The `dat` list with named elements (`r names(dat)`) is used as an argument for functions which estimate the direct and indirect effects. One can manually create a list with these elements (such as when fitting models to new data) or rely on the simulation function `SimulateData` to create the structure. The argument to `SimulateData` has parameters controlling the sample size, coefficient estimates, number of mediators, etc.
+
+# Data EDA
+
+We simulate a decent sized data set for mediation analysis:
+
+```{r simulate_big}
+params <- SimpleSim(n=1000,family="gaussian")
+dat <- SimulateData(params)
+dim(dat$xx)
+dim(dat$mm)
+```
+
+The goal is to assess the causal impact of `dat$xx` on `dat$y` and quantify how much of this effect passes through `dat$mm`. We see that $x$ is correlated with $y$ and $x$ is correlated with $m$ below.
+
+```{r plots, fig.width=7}
+par(mfcol=c(1,2),mar=c(5,5,1,1))
+boxplot(dat$y~dat$xx[,1],xlab="x",ylab="y")
+boxplot(dat$mm[,1]~dat$xx[,1],xlab="x",ylab="m")
+```
+
+
+# Fit Mediation Model
+
+In linear models, the direct effect is the path coefficient $x \rightarrow m$ and indirect effect is the product of path coefficients $x\rightarrow m$ and $m \rightarrow y$. We compute the effects 3 ways.
+
+1. Exact path coefficients from simulation.
+2. Estimated path coefficients from fitting regressions.
+3. Numerical integration described in Long et al. 2019
+
+Method 3. is not necessary in linear models (method 2 is easier), but it generalizes to non--linear models where method 2 is no longer applicable. Method 1 is only possible because this is a simulation where we know ground truth.
+
+## Method 1
+
+
+
+## Method 2
+
+## Method 3
+
+
+
+
+```{r fit_mediation_model}
+
+```
+
+
+
+# Survival Outcomes
