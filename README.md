@@ -24,8 +24,10 @@ R CMD INSTALL mediateR
 
 See the vignettes:
 
-* [https://longjp.github.io/mediateR/intro.html](https://longjp.github.io/mediateR/intro.html)
-* [https://longjp.github.io/mediateR/multiple_mediators.html](https://longjp.github.io/mediateR/multiple_mediators.html)
+* [Introduction](https://longjp.github.io/mediateR/intro.html)
+* [Multiple Mediators](https://longjp.github.io/mediateR/multiple_mediators.html)
+
+For reproducing all results in the paper, see the github repo [mediateR_paper](https://github.com/longjp/mediateR_paper)
 
 ### Citation and Contact
 
