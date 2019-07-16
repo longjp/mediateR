@@ -1,7 +1,11 @@
 ---
-title: "Multiple Mediators"
+title: "Multiple Mediation Analysis with `mediateR`"
 author: James P. Long
-output: pdf_document
+output: 
+  rmarkdown::html_vignette:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{Multiple Mediators}
   %\VignetteEngine{knitr::rmarkdown}
@@ -30,7 +34,7 @@ set.seed(280920181)
 \newcommand{\ind}[1]{\mathbf{1}_{#1}}
 \newcommand{\todo}[1]{\color{red}{\text{TODO: #1}}}
 
-## Simulation 1: Linear
+# Linear
 
 Simulate `n` observations from the "True Graph" using independent, binary SNPs drawn from Bernoulli(1/2) and path coefficients given below.
 
@@ -112,8 +116,7 @@ legend("topright",c("Truth","Point Estimate"),col=c("red","blue"),lwd=2)
 
 
 
-
-## Simulation 2: Logistic
+# Logistic
 
 Same as simulation 1 but with binomial link function connecting y with snps and gene sets.
 
@@ -191,18 +194,7 @@ legend("topright",c("Point Estimate","True"),col=c("blue","red"),lwd=2)
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-## Simulation 3: Survival
+# Survival
 
 Same as simulation 1 and 3 but with exponentially distributed survival times. The rate is $e^{\beta^Tx}$ where $x$ are the covariates. This model can be fit with Cox Proportional Hazards.
 

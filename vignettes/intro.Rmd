@@ -6,7 +6,7 @@ output:
     toc: yes
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{intro}
+  %\VignetteIndexEntry{Introduction}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,6 +21,8 @@ knitr::opts_chunk$set(
 ```{r setup}
 set.seed(1234)
 library(mediateR)
+library(ggplot2)
+library(ggfortify)
 ```
 
 
@@ -48,12 +50,13 @@ dim(dat$xx)
 dim(dat$mm)
 ```
 
-The goal is to assess the causal impact of `dat$xx` on `dat$y` and quantify how much of this effect passes through `dat$mm`. We see that $x$ is correlated with $y$ and $x$ is correlated with $m$ below.
+The goal is to assess the causal impact of `dat$xx` on `dat$y` and quantify how much of this effect passes through `dat$mm`. For some initial evidence, see that $x$ is correlated with both $y$ and $m$ and $m$ and $y$ are correlated:
 
 ```{r plots, fig.width=7}
-par(mfcol=c(1,2),mar=c(5,5,1,1))
+par(mfcol=c(1,3),mar=c(5,4,1,1))
 boxplot(dat$y~dat$xx[,1],xlab="x",ylab="y")
 boxplot(dat$mm[,1]~dat$xx[,1],xlab="x",ylab="m")
+plot(dat$mm,dat$y,xlab="m",ylab="y")
 ```
 
 
@@ -65,23 +68,92 @@ In linear models, the direct effect is the path coefficient $x \rightarrow m$ an
 2. Estimated path coefficients from fitting regressions.
 3. Numerical integration described in Long et al. 2019
 
-Method 3. is not necessary in linear models (method 2 is easier), but it generalizes to non--linear models where method 2 is no longer applicable. Method 1 is only possible because this is a simulation where we know ground truth.
+Method 3 is not necessary in linear models (method 2 is easier), but it generalizes to non--linear models where method 2 is no longer applicable. Method 1 is only possible because this is a simulation where we know ground truth.
 
 ## Method 1
 
-
+```{r exact_mediation_effect}
+ComputeEffectsLinear(params)
+```
 
 ## Method 2
 
-## Method 3
-
-
-
-
-```{r fit_mediation_model}
-
+```{r path_ests_mediation_effect}
+fit <- ComputePath(dat)
+ComputeEffectsLinear(fit)
 ```
 
 
+## Method 3
+
+```{r numeric_integration}
+effect <- c(ComputeEffectxx(dat,fit,"direct"),
+            ComputeEffectxx(dat,fit,"indirect"),
+            ComputeEffectxx(dat,fit,"total"))
+effect
+```
+
 
 # Survival Outcomes
+
+We can also compute effects for survival models.
+
+```{r survival_sim}
+params <- SimpleSim(n=1000,family="cox")
+dat <- SimulateData(params)
+class(dat$y) ## response is Surv object
+```
+
+
+Survival curves suggest very strong effect of `dat$xx` on `dat$y`:
+
+```{r survival_sim_graph}
+fit <- survival::survfit(dat$y~as.factor(dat$xx[,1]))
+autoplot(fit,xlab="Survival Time (months)",ylab="Survival")
+```
+
+Compute mediation effect point estimates:
+
+```{r numeric_integration_surv}
+rmean <- 10
+fit <- ComputePath(dat)
+effect <- c("direct"=ComputeEffectxx(dat,fit,"direct",rmean=rmean),
+            "indirect"=ComputeEffectxx(dat,fit,"indirect",rmean=rmean),
+            "total"=ComputeEffectxx(dat,fit,"total",rmean=rmean))
+effect
+```
+
+Appears to be strong negative causal effect with most of this effect mediated by `dat$mm`.
+
+## Bootstrap Sampling to Assess Uncertainty
+
+```{r bootstrap}
+B <- 500
+boot_effect <- matrix(NA_real_,nrow=B,ncol=2)
+for(ii in 1:B){
+  ix <- sample(1:params$n,replace=TRUE)
+  dat_boot <- mediateR:::SubsetDat(dat,ix)
+  fit_boot <- ComputePath(dat_boot)
+  boot_effect[ii,1] <- ComputeEffectxx(dat_boot,fit_boot,"direct",rmean=rmean)
+  boot_effect[ii,2] <- ComputeEffectxx(dat_boot,fit_boot,"indirect",rmean=rmean)
+}
+```
+
+Plot bootstrap samples:
+
+```{r bootstrap_plot}
+par(mar=c(5,5,1,1))
+plot(boot_effect[,1],boot_effect[,2],
+     xlim=range(c(0,boot_effect[,1])),ylim=range(c(0,boot_effect[,2])),
+     xlab="Direct Effect (months)",ylab="Indirect Effect (months)")
+points(effect[1],effect[2],col='red',pch=19)
+points(0,0,col='blue',pch=19)
+abline(h=0)
+abline(v=0)
+```
+
+Conclusion: `dat$xx` has a strong negative causal impact on survival with most of this effect passing through the mediator `dat$mm`.
+
+
+
+
