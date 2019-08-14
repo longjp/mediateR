@@ -10,7 +10,7 @@
 #' @param dat List containing data (see SimulateData for format)
 #' @param reg Should path coefficient estimates be regularized. Experimental.
 #'   Defaults to FALSE.
-#' @param mmr Should residuals from mm | xx regression be returned.
+#' @param mmn Should residuals from mm | xx regression be returned.
 #'   If FALSE return NULL. Must be true if estimating direct/indirect effects
 #'   with graph structure.
 #' @return List containing path coefficients, variance estimates, residuals.
@@ -21,7 +21,7 @@
 #' print(fit$xx_direct)
 #' print(params$xx_direct)
 #' @export
-ComputePath <- function(dat,reg=FALSE,mmr=FALSE){
+ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   ## unpack list
   xx <- dat$xx
   mm <- dat$mm

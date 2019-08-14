@@ -4,7 +4,7 @@
 \alias{ComputePath}
 \title{Computes path coefficients.}
 \usage{
-ComputePath(dat, reg = FALSE, mmr = FALSE)
+ComputePath(dat, reg = FALSE, mmn = FALSE)
 }
 \arguments{
 \item{dat}{List containing data (see SimulateData for format)}
@@ -12,7 +12,7 @@ ComputePath(dat, reg = FALSE, mmr = FALSE)
 \item{reg}{Should path coefficient estimates be regularized. Experimental.
 Defaults to FALSE.}
 
-\item{mmr}{Should residuals from mm | xx regression be returned.
+\item{mmn}{Should residuals from mm | xx regression be returned.
 If FALSE return NULL. Must be true if estimating direct/indirect effects
 with graph structure.}
 }
