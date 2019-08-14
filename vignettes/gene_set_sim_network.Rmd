@@ -72,7 +72,7 @@ edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct
 
 
 ```{r compute_estimate,echo=FALSE,eval=TRUE}
-fit <- ComputePath(dat,mmr=TRUE)
+fit <- ComputePath(dat,mmn=TRUE)
 fit$cov_mm <- cov(fit$mm_resid)
 ```
 
@@ -102,7 +102,7 @@ sim_params2 <- sim_params
 sim_params2$n <- 1e6 ## use million observations to approximate effects
 dat2 <- SimulateData(sim_params2)
 dat2$path[,] <- 1
-fit2 <- ComputePath(dat2,mmr=TRUE)
+fit2 <- ComputePath(dat2,mmn=TRUE)
 fit2$cov_mm <- cov(fit2$mm_resid)
 direct_t <- ComputeEffectxx(dat2,fit2,"direct",mmn=TRUE)
 indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",mmn=TRUE)
@@ -124,7 +124,7 @@ total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
   dat_boot <- mediateR:::SubsetDat(dat,ix)
-  fit_boot <- ComputePath(dat_boot,mmr=TRUE)
+  fit_boot <- ComputePath(dat_boot,mmn=TRUE)
   fit_boot$cov_mm <- cov(fit_boot$mm_resid)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
 }
@@ -174,7 +174,7 @@ edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct
 ```
 
 ```{r compute_estimate2,echo=FALSE,eval=TRUE}
-fit <- ComputePath(dat,mmr=TRUE)
+fit <- ComputePath(dat,mmn=TRUE)
 fit$cov_mm <- cov(fit$mm_resid)
 ```
 
@@ -188,7 +188,7 @@ sim_params2 <- sim_params
 sim_params2$n <- 1e6 ## use million observations to approximate effects
 dat2 <- SimulateData(sim_params2)
 dat2$path[,] <- 1
-fit2 <- ComputePath(dat2,mmr=TRUE)
+fit2 <- ComputePath(dat2,mmn=TRUE)
 fit2$cov_mm <- cov(fit2$mm_resid)
 direct_t <- ComputeEffectxx(dat2,fit2,"direct",mmn=TRUE)
 indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",mmn=TRUE)
@@ -210,7 +210,7 @@ total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
   dat_boot <- mediateR:::SubsetDat(dat,ix)
-  fit_boot <- ComputePath(dat_boot,mmr=TRUE)
+  fit_boot <- ComputePath(dat_boot,mmn=TRUE)
   fit_boot$cov_mm <- cov(fit_boot$mm_resid)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",mmn=TRUE)[1]
 }
