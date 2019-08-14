@@ -46,7 +46,7 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
     stop("reg must be TRUE if p > n")
   }
   ## create matrix for storing mm residuals, if requested
-  if(mmr){
+  if(mmn){
     mm_resid <- matrix(0,nrow=nrow(mm),ncol=ncol(mm))
   } else {
     mm_resid <- NULL
@@ -117,7 +117,7 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
       names(temp) <- c("intercept",colnames(x))
     }
     const_mm[ii] <- temp[1]
-    if(mmr){
+    if(mmn){
       mm_resid[,ii] <- rs
     }
     var_mm[ii] <- mean(rs^2)
