@@ -201,71 +201,10 @@ QuickSim <- function(n,nxx,nmm,family,xx_prob=0.5,const_direct=0){
 }
 
 
-
-## returns simulation parameters assuming a simple path structure
-# n = sample size
-# nxx = number of xxs
-# nmm = number of gene sets
-# family = "gaussian" or "binomial"
-QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
-  if(nmm < 2){
-    stop("nmm (number of gene sets) must be at least 2")
-  }
-  if(nxx < 30){
-    stop("nxx (number of xxs) must be at least 30")
-  }
-  ##path <- matrix(rbinom(nxx*nmm,size=1,prob=.2),nrow=nxx,ncol=nmm)
-  path <- matrix(1,nrow=nxx,ncol=nmm)
-  xxnames <- paste0("x",1:nrow(path))
-  mmnames <- paste0("m",1:ncol(path))
-  rownames(path) <- xxnames
-  colnames(path) <- mmnames
-  # path[1:10,1] <- 1
-  # path[1,2] <- 0
-  # path[2,1] <- 1
-  # path[2,2] <- 1
-  # path[3,1] <- 0
-  # path[3,2] <- 1
-  # if(nxx >=4){
-  #   path[4:nxx,1:2] <- 0
-  # }
-  ## coefficients linking xx with mm
-  path_model <- matrix(1/2*sample(c(-1,1,0,0,0,0),size=nrow(path)*ncol(path),
-                                  replace=TRUE),
-                       nrow=nrow(path),ncol=ncol(path))
-  path_model[1:10,1] <- 1/2*sample(c(-1,1),size=10,replace=TRUE)
-  path_model[11:20,1] <- 0
-  path_model <- path_model*path
-  ## fix path model for relevant subgraph
-  path_model[11:nxx,1] <- 0
-  ## simulate empy matrices for covariates
-  co_mm <- matrix(-1,nrow=0,ncol=ncol(path))
-  colnames(co_mm) <- colnames(path)
-  co_direct <- rep(-1,0)
-  ## direct effects
-  xx_direct <- c(rep(0,10),rep(1,10),rep(0,nxx-20))
-  names(xx_direct) <- xxnames
-  mm_direct <- c(1,rep(0,ncol(path)-1))
-  names(mm_direct) <- mmnames
-  ## constant parameters
-  const_mm <- rep(0,ncol(path))
-  const_direct <- 0
-  ## mm variance
-  var_mm <- rep(1,ncol(path))
-  sim_params <- list(n=n,path=path,path_model=path_model,
-                     co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,
-                     xx_direct=xx_direct,mm_direct=mm_direct,
-                     co_direct=co_direct,const_direct=const_direct,
-                     xx_prob=xx_prob,
-                     linkage="indep",family=family)
-  return(sim_params)
-}
-
-
-#' Generate simulation parameters assuming a simple path structure
+#' Generate simulation parameters with multiple mediators
 #'
-#' \code{SimpleSim} creates simulation parameters which are then used
-#'   to generate data with \code{SimulateData}. Mostly used for testing.
+#' \code{QuickSimMultipleMediator} creates simulation parameters which are then used
+#'   to generate data with \code{SimulateData}.
 #'
 #' @param n Sample Size
 #' @param nmm Number of mediators
