@@ -28,7 +28,7 @@ library(graph)
 library(gridExtra)
 library(kableExtra)
 library(ggplot2)
-devtools::load_all("../mediateR/")
+library(mediateR)
 set.seed(28092018)
 ```
 \newcommand{\Var}{\text{Var}}
