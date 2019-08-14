@@ -262,9 +262,24 @@ QuickSim2 <- function(n,nxx,nmm,family,xx_prob=0.5){
 }
 
 
-## returns simulation parameters assuming a simple path structure
-# n = sample size
-# nmm = number of gene sets
+#' Generate simulation parameters assuming a simple path structure
+#'
+#' \code{SimpleSim} creates simulation parameters which are then used
+#'   to generate data with \code{SimulateData}. Mostly used for testing.
+#'
+#' @param n Sample Size
+#' @param nmm Number of mediators
+#' @param family Response type
+#' @param var_mm Variance of the mediators
+#' @param xx_direct Path coefficient form x to response
+#' @param mm_direct Path coefficient from mediators to response
+#' @param xx_prob Probability x is 1.
+#' @return List that the parameterizes simulation. Typically used as
+#'   argument in subsequent call to \code{SimulateData}
+#' @examples
+#' params <- QuickSimMultipleMediator(500,5,"cox")
+#' names(params)
+#' @export
 QuickSimMultipleMediator <- function(n,nmm,family,
                                      var_mm=10,xx_direct=0.5,
                                      mm_direct=.5,xx_prob=0.2){

@@ -3,5 +3,6 @@
 export(ComputeEffectsLinear)
 export(ComputeEffectxx)
 export(ComputePath)
+export(QuickSimMultipleMediator)
 export(SimpleSim)
 export(SimulateData)
