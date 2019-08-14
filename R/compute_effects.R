@@ -152,8 +152,15 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   } else {
     co_direct <- NULL
   }
-  return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,const_direct=const_direct,
-              path_model=path_model,co_mm=co_mm,const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,directfit=directfit))
+  if(mmn){
+    cov_mm <- cov(mm_resid)
+  } else {
+    cov_mm <- NULL
+  }
+  return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,
+              const_direct=const_direct,path_model=path_model,co_mm=co_mm,
+              const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,cov_mm=cov_mm,
+              directfit=directfit))
 }
 
 #' Computes direct and indirect effects for linear models.
@@ -175,9 +182,9 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
 #' ComputeEffectsLinear(fit) ## based on sample
 #' @export
 ComputeEffectsLinear <- function(fit){
-  ## indirect effects are product: sum_{gene set} (xx -> gene set) x (gene_set -> y)
+  ## indirect effects are product: sum_{mediator} (xx -> mediator) x (mediator -> y)
   xx_indirect <- colSums(t(fit$path_model)*fit$mm_direct)
-  ## add indirect effects of gene sets (by definition 0)
+  ## add indirect effects of mediator sets (by definition 0)
   indirect <- c(xx_indirect,rep(0,ncol(fit$path_model)))
   direct <- c(fit$xx_direct,fit$mm_direct)
   eff <- cbind(direct,indirect,direct+indirect)
@@ -270,7 +277,7 @@ ComputeBaselineSurvival <- function(y,preds0){
 ##         fit   :   output from ComputePath (path coefficients) or
 ##                   the true coefficients if we are approximating the true value
 ##  risk_scale   :   "diff" for risk difference, "ratio" for odds ratio
-##         mmn   :   should gene set network be simulated
+##         mmn   :   should mediator network be simulated
 ##
 ##      value
 ##        vector with all xx effects
@@ -287,7 +294,7 @@ ComputeBaselineSurvival <- function(y,preds0){
 #' @param xpp The new value of x.
 #' @param risk_scale Either 'diff' (for risk difference) or 'ratio' (for odds).
 #'  see details for more information.
-#' @param mmn Should gene set network be simulated. If FALSE assume
+#' @param mmn Should mediator network be simulated. If FALSE assume
 #'   conditionally independent mediators.
 #' @return Vector of effects.
 #' @examples
