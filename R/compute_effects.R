@@ -45,6 +45,9 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   if((nrow(xx) < ncol(xx) + ncol(mm) + ncol(co)) & !reg){
     stop("reg must be TRUE if p > n")
   }
+  if(sum(is.na(co)) + sum(is.na(xx)) + sum(is.na(mm)) + sum(is.na(y)) > 0.5){
+    stop("cannot handle NAs in dat")
+  }
   ## create matrix for storing mm residuals, if requested
   if(mmn){
     mm_resid <- matrix(0,nrow=nrow(mm),ncol=ncol(mm))
