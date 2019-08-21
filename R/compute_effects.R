@@ -312,6 +312,9 @@ ComputeBaselineSurvival <- function(y,preds0){
 #' ComputeEffectsLinear(params) ## exact
 #' @export
 ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,rmean=NULL){
+  if(is.null(dat$cov_mm) & mmn){
+    stop("dat$cov_mm must be non-null when mmn=TRUE. either set mmn=FALSE or specify mmn=TRUE when calling ComputePaths to produce fit object.")
+  }
   if(dat$family=="cox" & is.null(rmean)){
     stop("In ComputeEffectxx, rmean must be non NULL for dat$family=cox")
   }
