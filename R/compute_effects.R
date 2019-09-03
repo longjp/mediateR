@@ -244,46 +244,32 @@ ComputeBaselineSurvival <- function(y,preds0){
   ymat <- as.matrix(y)
   ti <- ymat[,1]
   del <- ymat[,2]
+  ## compute 8.8.1
   ## order by times with deaths as tie breakers
   ords <- order(ti,1-del)
   ti <- ti[ords]
   del <- del[ords]
   preds0 <- preds0[ords]
-  di <- table(ti[del==1])
   r <- rev(cumsum(rev(exp(preds0))))
   r <- r[del==1]
   ti <- ti[del==1]
+  di <- table(ti)
   nd <- !duplicated(ti)
   r <- r[nd]
   ti <- ti[nd]
-  di <- di[as.character(ti)] ## TODO: dangerous?
-  ##print(di)
-  ##print(r)
+  di <- di[as.character(ti)]
+  ## compute 8.8.2
   r <- cumsum(di / r)
-  ##print(r)
+  ## compute 8.8.3
   s <- exp(-r)
-  ##print(s)
   ti <- c(0,ti)
   s <- c(1,s)
   names(s) <- NULL
-  ##print(s)
   if(mean(s==1)==1){
     warning("estimated survival function identically 1. likely cause is numerical instability due to poor parameter estimates")
   }
   return(list(ti=ti,s=s))
 }
-
-
-## computes direct, indirect, or total effects of xx
-##    arguments
-##         dat   :   list of xx, mm, path, co, y, family
-##         fit   :   output from ComputePath (path coefficients) or
-##                   the true coefficients if we are approximating the true value
-##  risk_scale   :   "diff" for risk difference, "ratio" for odds ratio
-##         mmn   :   should mediator network be simulated
-##
-##      value
-##        vector with all xx effects
 
 #' Computes direct, indirect, or total effects of xx
 #'
