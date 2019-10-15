@@ -12,6 +12,10 @@ FindSubgraph <- function(params){
 ## creates GraphNEL object which can then
 ## be plotted
 MakeGraphNELObject <- function(path,xx_direct,mm_direct,mm_path=NULL){
+  if (!requireNamespace("graph", quietly = TRUE)) {
+    stop("Package graph needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   if(is.null(mm_path)){
     mm_path <- matrix(0,nrow=length(mm_direct),ncol=length(mm_direct))
   }
