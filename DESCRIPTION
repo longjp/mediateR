@@ -15,9 +15,8 @@ Imports:
     survival (>= 2.43-3)
 RoxygenNote: 6.1.1
 Suggests: 
-    graph (>= 1.60.0),
+    graph,
     knitr,
     rmarkdown,
-    kableExtra,
-    Rgraphviz
+    kableExtra
 VignetteBuilder: knitr
