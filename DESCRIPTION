@@ -12,11 +12,10 @@ LazyData: true
 Imports:
     glmnet  (>= 2.0-16),
     MASS (>= 7.3-51.1),
-    survival (>= 2.43-3),
-    graph (>= 1.60.0),
-    FakePackageNotReal
+    survival (>= 2.43-3)
 RoxygenNote: 6.1.1
 Suggests: 
+    graph (>= 1.60.0),
     knitr,
     rmarkdown,
     kableExtra,
