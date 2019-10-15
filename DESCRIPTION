@@ -13,7 +13,8 @@ Imports:
     glmnet  (>= 2.0-16),
     MASS (>= 7.3-51.1),
     survival (>= 2.43-3),
-    graph (>= 1.60.0)
+    graph (>= 1.60.0),
+    FakePackageNotReal
 RoxygenNote: 6.1.1
 Suggests: 
     knitr,
