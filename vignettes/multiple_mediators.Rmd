@@ -23,7 +23,6 @@ Simulations with multiple treatments ($x$) and multiple mediators ($m$) are demo
 ```{r load_packages}
 library(graph)
 library(kableExtra)
-library(Rgraphviz)
 library(mediateR)
 set.seed(280920181)
 ```
