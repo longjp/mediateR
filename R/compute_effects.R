@@ -71,10 +71,18 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
     temp <- coef(out)[,1]
   } else{
     if(family=="cox"){
-      ## fitter warns when wald test statistic not useful, but we don't care
-      out <- survival::coxph(y~x)
-      temp <- coef(out)
+      ## fitter occasionally fails in simulations, we catch error and infer 0 coefficients
+      out <- NULL
+      try(out <- survival::coxph(y~x),silent=TRUE)
+      if(is.null(out)){
+        out <- "coxph fitting FAIL, likely due to high dimensionality. proceeding as if all coefficients 0"
+        temp <- rep(0,ncol(x))
+      }
+      if(class(out)=="coxph"){
+        temp <- coef(out)
+      }
       names(temp) <- colnames(x)
+      ## fitter warns when wald test statistic not useful, but we don't care
       if(sum(is.na(temp)>0)){
         temp[is.na(temp)] <- 0
         warning("coxph returned NA coefficient estimates. NAs imputed to 0. likely cause is singularity of design. consider using regularized regression.")
@@ -307,6 +315,13 @@ ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,
   if(dat$family=="cox" & is.null(rmean)){
     stop("In ComputeEffectxx, rmean must be non NULL for dat$family=cox")
   }
+  ## occasionally coxph fit fails. in this case class(fit) will
+  ## not be coxph. we return 0 effects
+  ## most useful in simulations
+  if(dat$family=="cox" & class(fit)!="coxph"){
+    return(rep(0,nrow(dat$path)))
+  }
+
   ## by default gaussian family is computed on risk difference scale
   ## and binomial family is computed on odds ratio, but computing binomial
   ## on risk difference could also make sense and can be forced with risk_scale="diff"
