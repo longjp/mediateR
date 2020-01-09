@@ -1,6 +1,6 @@
 ## Multiple Mediation Analysis with Nonlinear Models
 
-<img src="man/figs/Figure1.pdf" align="right" width="240" />
+<img src="man/figs/dag_complex2.png" align="right" width="240" />
 
 
 Fit mediation models to assess the causal impact of **x** on **y** mediated through **m**. Implements models and algorithms described in Long et al. 2019+.
