@@ -1,4 +1,4 @@
-## Multiple Mediation Analysis with Nonlinear Models
+## Multiple Mediation Analysis with Nonlinear Chain Graphs
 
 <img src="man/figs/Figure1.png" align="right" width="440" />
 
