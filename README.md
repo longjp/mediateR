@@ -1,6 +1,6 @@
 ## Multiple Mediation Analysis with Nonlinear Chain Graphs
 
-<img src="man/figs/dag.pdf" align="right" width="440" />
+<img src="man/figs/dag.png" align="right" width="440" />
 
 
 Fit mediation models to assess the causal impact of **x** on **y** mediated through **m**. Implements models and algorithms described in Long et al. 2019+.
