@@ -1,9 +1,9 @@
-## Multiple Mediation Analysis with Nonlinear Chain Graphs
+## mediateR
 
 <img src="man/figs/dag.png" align="right" width="440" />
 
 
-Fit mediation models to assess the causal impact of **x** on **y** mediated through **m**. Implements models and algorithms described in Long et al. 2019+.
+Fit mediation models to assess the causal impact of **x** on **y** mediated through **m**. Implements models and algorithms described in Long et al. 2020+.
 
 ### Installation
 
@@ -31,4 +31,4 @@ For reproducing all results in the paper, see the github repo [mediateR_paper](h
 
 ### Citation and Contact
 
-This code was developed for and described in Long et al. 2019+. Email jplong@mdanderson.org with questions or bug reports.
+This code was developed for and described in Long et al. 2020+. Email jplong@mdanderson.org with questions or bug reports.
