@@ -21,6 +21,7 @@
 #' print(fit$xx_direct)
 #' print(params$xx_direct)
 #' @export
+# changed alpha to zero = ridge regression 
 ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   ## unpack list
   xx <- dat$xx
@@ -62,8 +63,8 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   var_mm <- rep(0,ncol(mm))
   ## regress y on everything to get direct effects
   x <- cbind(xx,mm,co)
-  alpha <- 0.99 ## balance of L1 versus L2 used in glmnet
-  if(reg){
+  alpha <- 0 ## balance of L1 versus L2 used in glmnet
+  if(reg){#reg
     out <- glmnet::cv.glmnet(x,y,family=family,alpha=alpha)
     if(out$lambda[1]==out$lambda.1se){
       warning("need to choose larger lambdas for computing direct effects")
@@ -104,9 +105,14 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
     const_direct <- 0
   }
   names(direct) <- c(colnames(xx),colnames(mm),colnames(co))
+  # regress each mediator on x in the path
   for(ii in 1:ncol(mm)){
     x <- cbind(xx[,path[,ii]==1,drop=FALSE],co)
     y <- mm[,ii]
+    # > table(x == mm[,5])
+    # 
+    # TRUE 
+    # 500 
     ## compute regularized path relations when requested reg=TRUE
     ## AND there are at least 2 path xxs
     if(reg & ncol(x)>=2){
@@ -209,18 +215,19 @@ Computexxp <- function(dat,fit,ii,dox,doxpa,mmn,rmean){
   xx_s <- dat$xx
   xx_s[,ii] <- doxpa
   if(mmn){
-    err <- MASS::mvrnorm(nrow(dat$mm),rep(0,ncol(dat$mm)),fit$cov_mm)
+    err <- MASS::mvrnorm(nrow(dat$mm),rep(0,ncol(dat$mm)),fit$cov_mm) 
   } else {
     err <- matrix(rnorm(prod(dim(dat$mm)),mean=0,sd=sqrt(fit$var_mm)),
                   nrow=nrow(dat$mm),byrow=TRUE)
   }
-  mm_s <- xx_s %*% fit$path_model + dat$co %*% fit$co_mm + err
+  mm_s <- xx_s %*% fit$path_model + dat$co %*% fit$co_mm + err 
   mm_s <- t(t(mm_s) + fit$const_mm)
   ## set xx to dox
   xx_s[,ii] <- dox
   x <- cbind(1,xx_s,mm_s,dat$co)
   direct <- c(fit$const_direct,fit$xx_direct,fit$mm_direct,fit$co_direct)
-  preds <- colSums(t(x)*direct)
+  # 0s in fit$mm_direct
+  preds <- colSums(t(x)*direct) # no variation
   ## transform to logistic scale
   if(dat$family=="binomial"){
     preds <- vapply(preds,function(x){1 / (1 + exp(-x))},c(0))
@@ -308,7 +315,7 @@ ComputeBaselineSurvival <- function(y,preds0){
 #' ## exact effects using simulation coefficients
 #' ComputeEffectsLinear(params) ## exact
 #' @export
-ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,rmean=NULL){
+ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,rmean=NULL, reg = F){
   if(is.null(fit$cov_mm) & mmn){
     stop("fit$cov_mm must be non-null when mmn=TRUE. either set mmn=FALSE or specify mmn=TRUE when calling ComputePaths to produce fit object.")
   }
@@ -318,10 +325,10 @@ ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,
   ## occasionally coxph fit fails. in this case class(fit) will
   ## not be coxph. we return 0 effects
   ## most useful in simulations
-  if(dat$family=="cox" & class(fit$directfit)!="coxph"){
+  if(dat$family=="cox" & class(fit$directfit)!="coxph" & reg == F){
     return(rep(0,nrow(dat$path)))
   }
-
+  
   ## by default gaussian family is computed on risk difference scale
   ## and binomial family is computed on odds ratio, but computing binomial
   ## on risk difference could also make sense and can be forced with risk_scale="diff"
