@@ -177,7 +177,7 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,
               const_direct=const_direct,path_model=path_model,co_mm=co_mm,
               const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,cov_mm=cov_mm,
-              directfit=directfit))
+              directfit=directfit, ivcor_mm = try(solve(cor(mm_resid)))))
 }
 
 #' Computes direct and indirect effects for linear models.
