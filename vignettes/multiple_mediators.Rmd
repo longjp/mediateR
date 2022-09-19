@@ -1,6 +1,6 @@
 ---
 title: "Multiple Mediation Analysis with `mediateR`"
-author: James P. Long
+author: James P. Long, PhD. and Licai Huang
 output: 
   rmarkdown::html_vignette:
     number_sections: yes
@@ -13,7 +13,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = F,message = F)
 options(knitr.kable.NA = '')
 options(scipen = 999)
 ```
@@ -274,5 +274,27 @@ hist(total_xx1,main="Bootstrap Samples SNP1 Total Effect",xlab="Estimate")
 abline(v=xx1total_sample,lwd=3,col='blue')
 abline(v=xx1total_true,lwd=3,col='red')
 legend("topright",c("Point Estimate","True"),col=c("blue","red"),lwd=2)
+```
+
+Estimation of mediator-mediator relations. 
+
+```{r compute_estimate4,echo=TRUE,eval=TRUE}
+sim_params$family <- "cox"
+dat <- SimulateData(sim_params)
+rmean <- max(as.matrix(dat$y)[,1])
+
+fit <- ComputePath(dat, mmn = T)
+# partial correlation between mediators adjusting for exposures and covariates
+par1 = cov2cor(fit$cov_mm)
+colnames(par1) = rownames(par1) = names(fit$mm_direct)
+kable(par1,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+# partial correlation between mediators adjusting for other mediators, exposures and covariates
+par2 = fit$ivcor_mm
+colnames(par2) = rownames(par2) = names(fit$mm_direct)
+kable(par2,digits=2) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
 ```
 

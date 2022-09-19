@@ -328,7 +328,7 @@ ComputeEffectxx <- function(dat,fit,effect,xp=0,xpp=1,risk_scale=NULL,mmn=FALSE,
   ## occasionally coxph fit fails. in this case class(fit) will
   ## not be coxph. we return 0 effects
   ## most useful in simulations
-  if(dat$family=="cox" & class(fit$directfit)!="coxph" & reg == F){
+  if(dat$family=="cox" & class(fit$directfit)[1]!="coxph" & reg == F){
     return(rep(0,nrow(dat$path)))
   }
   
