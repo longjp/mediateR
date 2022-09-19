@@ -13,7 +13,8 @@
 #' @param mmn Should residuals from mm | xx regression be returned.
 #'   If FALSE return NULL. Must be true if estimating direct/indirect effects
 #'   with graph structure.
-#' @return List containing path coefficients, variance estimates, residuals.
+#' @return List containing path coefficients, variance estimates, residuals, and
+#' partial correlation matrix. 
 #' @examples
 #' params <- SimpleSim()
 #' dat <- SimulateData(params)
@@ -171,13 +172,14 @@ ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
   }
   if(mmn){
     cov_mm <- cov(mm_resid)
+    ivcor_mm <- try(solve(cor(mm_resid)))
   } else {
-    cov_mm <- NULL
+    cov_mm <- ivcor_mm <- NULL
   }
   return(list(xx_direct=xx_direct,mm_direct=mm_direct,co_direct=co_direct,
               const_direct=const_direct,path_model=path_model,co_mm=co_mm,
               const_mm=const_mm,var_mm=var_mm,mm_resid=mm_resid,cov_mm=cov_mm,
-              directfit=directfit, ivcor_mm = try(solve(cor(mm_resid)))))
+              directfit=directfit, ivcor_mm = ivcor_mm))
 }
 
 #' Computes direct and indirect effects for linear models.
@@ -300,6 +302,7 @@ ComputeBaselineSurvival <- function(y,preds0){
 #'  see details for more information.
 #' @param mmn Should mediator network be simulated. If FALSE assume
 #'   conditionally independent mediators.
+#' @param reg Should path coefficient estimates be regularized. Experimental.
 #' @return Vector of effects.
 #' @examples
 #' params <- SimpleSim()
