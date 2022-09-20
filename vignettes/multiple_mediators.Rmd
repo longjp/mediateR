@@ -43,7 +43,15 @@ dat <- SimulateData(params)
 dat
 ```
 
-The `dat` list with named elements (`r names(dat)`) is used as an argument for functions which estimate the direct and indirect effects, where `dat$y` is the response,  `dat$mm` is the vector of the mediators, `dat$xx` is the vector of the exposures, and `dat$co` is the vector of the covariates. One can manually create a list with these elements (such as when fitting models to new data) or rely on the simulation function `SimulateData` to create the structure. The argument to `SimulateData` has parameters controlling the sample size, coefficient estimates, number of mediators, etc.
+The `dat` list with named elements (`r names(dat)`) is used as an argument for functions which estimate the direct and indirect effects.
+
+  - `dat$y` is the response,
+  - `dat$mm` is the vector of the mediators, 
+  - `dat$xx` is the vector of the exposures, 
+  - `dat$co` is the vector of the covariates, and 
+  - `dat$family` denotes the type of response.
+
+One can manually create a list with these elements (such as when fitting models to new data) or rely on the simulation function `SimulateData` to create the structure. The argument to `SimulateData` has parameters controlling the sample size, coefficient estimates, number of mediators, etc.
 
 
 # Mediation Analysis
@@ -134,7 +142,7 @@ total_xx1 <- vapply(eff_est_boot,function(x){x[1,3]},c(0))
 L95 = round(quantile(total_xx1, 0.025),2)
 U95 = round(quantile(total_xx1, 1 - 0.025),2)
 ```
-Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`,`r U95`)  
+Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`, `r U95`)  
 
 ```{r bootstrap_plot,echo=TRUE,fig.height=4.5,fig.width=4.5}
 
@@ -179,16 +187,20 @@ par(mfcol=c(1,2))
 plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Graph")
 plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Graph")
 ```
+Given the simulation setting, we can approximate the true effects by approximating integral with large sample size by setting `n` to million observations.
 
-```{r xx_effects_decomp2, echo=TRUE,eval=TRUE}
-## compute true effects by approximating integral with large sample size
+```{r xx_effects_decomp2_t, echo=TRUE,eval=TRUE}
 sim_params2 <- sim_params
-sim_params2$n <- 1e6 ## use million observations to approximate effects
+sim_params2$n <- 1e6 
 dat2 <- SimulateData(sim_params2)
 direct_t <- ComputeEffectxx(dat2,sim_params,"direct")
 indirect_t <- ComputeEffectxx(dat2,sim_params,"indirect")
 total_t <- ComputeEffectxx(dat2,sim_params,"total")
+```
 
+`ComputeEffectxx` provides estimation of direct, indirect and total effect.
+
+```{r  xx_effects_decomp2, echo=TRUE,eval=TRUE}
 direct <- ComputeEffectxx(dat,fit,"direct")
 indirect <- ComputeEffectxx(dat,fit,"indirect")
 total <- ComputeEffectxx(dat,fit,"total")
@@ -198,6 +210,7 @@ colnames(eff_comb) <- c("est","true","est","true","est","true")
 xx1total_sample <- eff_comb[1,5]
 xx1total_true <- eff_comb[1,6]
 ```
+
 Table below summarizes the Indirect, Direct, and Total effects. 
 
 ```{r kable_table2,echo=TRUE}
@@ -221,7 +234,7 @@ L95 = round(quantile(total_xx1, 0.025),2)
 U95 = round(quantile(total_xx1, 1 - 0.025),2)
 ```
 
-Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`,`r U95`)  
+Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`, `r U95`)  
 
 
 ```{r bootstrap_plot2,echo=TRUE,fig.height=4.5,fig.width=4.5}
@@ -246,7 +259,7 @@ rmean <- max(as.matrix(dat$y)[,1])
 
 Same as simulation 1 and 3 but with exponentially distributed survival times. The rate is $e^{\beta^Tx}$ where $x$ are the covariates. This model can be fit with Cox Proportional Hazards. We compute the effects on mean survival restricted to `r round(rmean)`.
 
-```{r plot_make3,echo=TRUE,eval=TRUE}
+```{r plot_make3,echo=F,eval=F}
 gR <- mediateR:::MakeGraphNELObject(sim_params$path,sim_params$xx_direct,sim_params$mm_direct)
 attrs <- list()
 attrs$edge <- list()
@@ -268,19 +281,23 @@ par(mfcol=c(1,2))
 plot(gR,edgeAttrs=edgeAttrs,attrs=attrs,main="True Graph")
 plot(gR2,edgeAttrs=edgeAttrs2,attrs=attrs2,main="Estimated Graph")
 ```
-Compute true effects by approximating integral with large sample size use the maximum observed time as the restricted mean time
+Given the simulation setting, we approximate true effects by approximating integral with large sample size use the maximum observed time as the restricted mean time.
 
-```{r xx_effects_decomp3, echo=TRUE,eval=TRUE}
+```{r xx_effects_decomp3_t, echo=TRUE,eval=TRUE}
 
 sim_params2 <- sim_params
-sim_params2$n <- 1e4 ## use many observations to approximate effects
+sim_params2$n <- 1e4 # use many observations to approximate effects
 dat2 <- SimulateData(sim_params2)
-fit2 <- ComputePath(dat2) ## perhaps better to modify fit by entering new coefficients
+fit2 <- ComputePath(dat2) 
 
 direct_t <- ComputeEffectxx(dat2,fit2,"direct",rmean=rmean)
 indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",rmean=rmean)
 total_t <- ComputeEffectxx(dat2,fit2,"total",rmean=rmean)
+```
 
+Similarly, `ComputeEffectxx` provides estimation of direct, indirect and total effect. `rmean`, the mean survival restricted to `r round(rmean)`, needs to be provided to calculate the effect.
+
+```{r xx_effects_decomp3, echo=TRUE,eval=TRUE}
 direct <- ComputeEffectxx(dat,fit,"direct",rmean=rmean)
 indirect <- ComputeEffectxx(dat,fit,"indirect",rmean=rmean)
 total <- ComputeEffectxx(dat,fit,"total",rmean=rmean)
@@ -315,7 +332,7 @@ L95 = round(quantile(total_xx1, 0.025),2)
 U95 = round(quantile(total_xx1, 1 - 0.025),2)
 ```
 
-Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`,`r U95`)  
+Figure below shows the histgram of total effects of Bootstrap samples for SNP1. The 95\% CI of the total effect for SNP1 is (`r L95`, `r U95`)  
 
 
 ```{r bootstrap_plot3,echo=TRUE,fig.height=4.5,fig.width=4.5}
@@ -355,7 +372,7 @@ kable(par2,digits=2) %>%
 ```
 
 
-We propose computing confidence intervals and hypothesis tests using bootstrap sampling quantiles.
+Here we show how to compute confidence intervals and hypothesis tests using bootstrap sampling quantiles.
 
 ```{r icov_bootstrap,echo=TRUE,eval=TRUE}
 B <- 100
@@ -367,10 +384,9 @@ for(ii in 1:B){
   corrmm[ii,,] <- fit_boot$ivcor_mm
 }
 
-
 L95 = round(quantile(corrmm[,1,2], 0.025),2)
 U95 = round(quantile(corrmm[,1,2], 1 - 0.025),2)
 
 ```
 
-The 95\% CI of partial correlation between `m1` and `m2` is (`r L95`,`r U95`)  
+The 95\% CI of partial correlation adjusting for other mediators, exposures and covariates between `m1` and `m2` is (`r L95`, `r U95`). 0 is included in this interval suggesting that the partial correlation between `m1` and `m2` is not significant. 
