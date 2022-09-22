@@ -23,7 +23,7 @@
 #' print(params$xx_direct)
 #' @export
 # changed alpha to zero = ridge regression 
-ComputePath <- function(dat,reg=FALSE,mmn=FALSE){
+ComputePath <- function(dat,reg=FALSE,mmn=TRUE){
   ## unpack list
   xx <- dat$xx
   mm <- dat$mm

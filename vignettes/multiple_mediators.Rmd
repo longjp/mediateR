@@ -80,11 +80,13 @@ edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct
 
 ### Model fitting
 
-`ComputePath` is used to fit the mediation analysis framework for various response, where `dat` are the datalist with the format mentioned above, `mmn=F` assuming independent mediators and `reg=T` is used for high-dimensional mediators (default is false) 
+`ComputePath` is used to fit the mediation analysis framework for various response, where `dat` are the datalist with the format mentioned above, `mmn=F` assuming independent mediators and `reg=T` is used for high-dimensional mediators (default is false).
+
+If one makes the assumption of conditionally independent mediators given $\mathbf{x}$ and $\mathbf{c}$, i.e., $m_j \perp \!\!\! \perp  m_k | \mathbf{x},\mathbf{c}$, for all $j,k$, then $\mathbf{\Sigma}_\epsilon$ is diagonal and can be estimated using the error variances from separate univariate regressions, $m_j | (x,c)$ for all $j$. This estimate will be more efficient, but carries more assumptions.
 
 
 ```{r compute_estimate,echo=TRUE,eval=TRUE}
-fit <- ComputePath(dat, mmn = F, reg = F)
+fit <- ComputePath(dat, mmn = T, reg = F)
 eff_est <- ComputeEffectsLinear(fit)
 ```
 
@@ -134,7 +136,7 @@ eff_est_boot <- vector("list",length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
   dat_sub <- mediateR:::SubsetDat(dat,ix)
-  fit <- ComputePath(dat_sub)
+  fit <- ComputePath(dat_sub, mmn = T)
   eff_est_boot[[ii]] <- ComputeEffectsLinear(fit)
 }
 
@@ -174,7 +176,7 @@ edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct
 ### Model Fitting 
 
 ```{r compute_estimate2,echo=TRUE,eval=TRUE}
-fit <- ComputePath(dat)
+fit <- ComputePath(dat, mmn = T)
 ```
 
 ```{r plot_subgraph2,echo=F,eval=F,fig.height=6,fig.width=12}
@@ -227,7 +229,7 @@ total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
   dat_boot <- mediateR:::SubsetDat(dat,ix)
-  fit_boot <- ComputePath(dat_boot)
+  fit_boot <- ComputePath(dat_boot, mmn = T)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total")[1]
 }
 L95 = round(quantile(total_xx1, 0.025),2)
@@ -268,7 +270,7 @@ edgeAttrs <- mediateR:::MakeedgeAttrs(sim_params$path_model,sim_params$xx_direct
 ```
 
 ```{r compute_estimate3,echo=TRUE,eval=TRUE}
-fit <- ComputePath(dat)
+fit <- ComputePath(dat, mmn = T)
 ```
 
 ```{r plot_subgraph3,echo=F,eval=F,fig.height=6,fig.width=12}
@@ -288,7 +290,7 @@ Given the simulation setting, we approximate true effects by approximating integ
 sim_params2 <- sim_params
 sim_params2$n <- 1e4 # use many observations to approximate effects
 dat2 <- SimulateData(sim_params2)
-fit2 <- ComputePath(dat2) 
+fit2 <- ComputePath(dat2, mmn = T) 
 
 direct_t <- ComputeEffectxx(dat2,fit2,"direct",rmean=rmean)
 indirect_t <- ComputeEffectxx(dat2,fit2,"indirect",rmean=rmean)
@@ -325,7 +327,7 @@ total_xx1 <- rep(0,length=B)
 for(ii in 1:B){
   ix <- sample(1:sim_params$n,replace=TRUE)
   dat_boot <- mediateR:::SubsetDat(dat,ix)
-  fit_boot <- ComputePath(dat_boot)
+  fit_boot <- ComputePath(dat_boot, mmn = T)
   total_xx1[ii] <- ComputeEffectxx(dat_boot,fit_boot,"total",rmean=rmean)[1]
 }
 L95 = round(quantile(total_xx1, 0.025),2)

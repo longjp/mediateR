@@ -664,8 +664,15 @@ given below.</p>
 framework for various response, where <code>dat</code> are the datalist
 with the format mentioned above, <code>mmn=F</code> assuming independent
 mediators and <code>reg=T</code> is used for high-dimensional mediators
-(default is false)</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat, <span class="at">mmn =</span> F, <span class="at">reg =</span> F)</span>
+(default is false).</p>
+<p>If one makes the assumption of conditionally independent mediators
+given <span class="math inline">\(\mathbf{x}\)</span> and <span class="math inline">\(\mathbf{c}\)</span>, i.e., <span class="math inline">\(m_j \perp \!\!\! \perp m_k |
+\mathbf{x},\mathbf{c}\)</span>, for all <span class="math inline">\(j,k\)</span>, then <span class="math inline">\(\mathbf{\Sigma}_\epsilon\)</span> is diagonal and
+can be estimated using the error variances from separate univariate
+regressions, <span class="math inline">\(m_j | (x,c)\)</span> for all
+<span class="math inline">\(j\)</span>. This estimate will be more
+efficient, but carries more assumptions.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat, <span class="at">mmn =</span> T, <span class="at">reg =</span> F)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>eff_est <span class="ot">&lt;-</span> <span class="fu">ComputeEffectsLinear</span>(fit)</span></code></pre></div>
 <p>In linear models, the direct effect is the path coefficient <span class="math inline">\(x \rightarrow m\)</span> (<code>xx_direct</code>),
 and indirect effect is the product of path coefficients <span class="math inline">\(x\rightarrow m\)</span> (<code>path_model</code>),
@@ -850,7 +857,7 @@ bootstrap sampling quantiles.</p>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(ii <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>B){</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  ix <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>sim_params<span class="sc">$</span>n,<span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  dat_sub <span class="ot">&lt;-</span> mediateR<span class="sc">:::</span><span class="fu">SubsetDat</span>(dat,ix)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_sub)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_sub, <span class="at">mmn =</span> T)</span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  eff_est_boot[[ii]] <span class="ot">&lt;-</span> <span class="fu">ComputeEffectsLinear</span>(fit)</span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
@@ -874,7 +881,7 @@ with snps and gene sets.</p>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">SimulateData</span>(sim_params)</span></code></pre></div>
 <div id="model-fitting-1" class="section level3" number="2.2.1">
 <h3><span class="header-section-number">2.2.1</span> Model Fitting</h3>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat, <span class="at">mmn =</span> T)</span></code></pre></div>
 <p>Given the simulation setting, we can approximate the true effects by
 approximating integral with large sample size by setting <code>n</code>
 to million observations.</p>
@@ -1022,7 +1029,7 @@ x3
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(ii <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>B){</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  ix <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>sim_params<span class="sc">$</span>n,<span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  dat_boot <span class="ot">&lt;-</span> mediateR<span class="sc">:::</span><span class="fu">SubsetDat</span>(dat,ix)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  fit_boot <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_boot)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  fit_boot <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_boot, <span class="at">mmn =</span> T)</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  total_xx1[ii] <span class="ot">&lt;-</span> <span class="fu">ComputeEffectxx</span>(dat_boot,fit_boot,<span class="st">&quot;total&quot;</span>)[<span class="dv">1</span>]</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>L95 <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">quantile</span>(total_xx1, <span class="fl">0.025</span>),<span class="dv">2</span>)</span>
@@ -1050,14 +1057,14 @@ fit with Cox Proportional Hazards.</p>
 survival times. The rate is <span class="math inline">\(e^{\beta^Tx}\)</span> where <span class="math inline">\(x\)</span> are the covariates. This model can be
 fit with Cox Proportional Hazards. We compute the effects on mean
 survival restricted to 189.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat, <span class="at">mmn =</span> T)</span></code></pre></div>
 <p>Given the simulation setting, we approximate true effects by
 approximating integral with large sample size use the maximum observed
 time as the restricted mean time.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>sim_params2 <span class="ot">&lt;-</span> sim_params</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>sim_params2<span class="sc">$</span>n <span class="ot">&lt;-</span> <span class="fl">1e4</span> <span class="co"># use many observations to approximate effects</span></span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>dat2 <span class="ot">&lt;-</span> <span class="fu">SimulateData</span>(sim_params2)</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat2) </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat2, <span class="at">mmn =</span> T) </span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>direct_t <span class="ot">&lt;-</span> <span class="fu">ComputeEffectxx</span>(dat2,fit2,<span class="st">&quot;direct&quot;</span>,<span class="at">rmean=</span>rmean)</span>
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>indirect_t <span class="ot">&lt;-</span> <span class="fu">ComputeEffectxx</span>(dat2,fit2,<span class="st">&quot;indirect&quot;</span>,<span class="at">rmean=</span>rmean)</span>
@@ -1201,7 +1208,7 @@ x3
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(ii <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>B){</span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  ix <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>sim_params<span class="sc">$</span>n,<span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  dat_boot <span class="ot">&lt;-</span> mediateR<span class="sc">:::</span><span class="fu">SubsetDat</span>(dat,ix)</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  fit_boot <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_boot)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  fit_boot <span class="ot">&lt;-</span> <span class="fu">ComputePath</span>(dat_boot, <span class="at">mmn =</span> T)</span>
 <span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  total_xx1[ii] <span class="ot">&lt;-</span> <span class="fu">ComputeEffectxx</span>(dat_boot,fit_boot,<span class="st">&quot;total&quot;</span>,<span class="at">rmean=</span>rmean)[<span class="dv">1</span>]</span>
 <span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>L95 <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">quantile</span>(total_xx1, <span class="fl">0.025</span>),<span class="dv">2</span>)</span>
