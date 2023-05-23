@@ -50,6 +50,7 @@ The `dat` list with named elements (`r names(dat)`) is used as an argument for f
   - `dat$xx` is the vector of the exposures, 
   - `dat$co` is the vector of the covariates, and 
   - `dat$family` denotes the type of response.
+  - `dat$path` is p x q matrix of 0s and 1s denoting paths to be fit. path[i,j]=0 indicates a priori knowledge of no path xx[i] and mm[j].
 
 One can manually create a list with these elements (such as when fitting models to new data) or rely on the simulation function `SimulateData` to create the structure. The argument to `SimulateData` has parameters controlling the sample size, coefficient estimates, number of mediators, etc.
 
